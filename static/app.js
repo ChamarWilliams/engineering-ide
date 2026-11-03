@@ -255,7 +255,7 @@ function renderChrome() {
   syncFlowable();
   Qol.visit(state.tabKey);
   el.statusLang.textContent = lang.label;
-  document.title = `${name} – Loopline`;
+  document.title = document.body.classList.contains('no-file') ? 'Loopline' : `${name} – Loopline`;
 
   const parts = [['folder', 'Loopline'], ['folder', 'sessions'], ['file', name]];
   const target = el.statusPath;
@@ -472,6 +472,8 @@ async function showEmpty() {
   History.clear();
   history.pushState({}, '', location.pathname);
   document.body.classList.add('no-file');
+  document.title = 'Loopline';
+  renderTree();
 }
 
 async function openSession(id, { push = true } = {}) {
@@ -696,7 +698,7 @@ function renderTree() {
   rows.push(treeRow(0, [svgUse('i-chevron', 'twisty'), svgUse('i-folder-fill'), rootName, rootPath]));
 
   const entries = state.sessions.map((s) => (s.id === state.id ? { ...s, title: state.title, language: state.language, folder: state.folder } : s));
-  if (!state.id) entries.unshift({ id: null, title: state.title, language: state.language, folder: state.folder, updated_at: null });
+  if (!state.id && !document.body.classList.contains('no-file')) entries.unshift({ id: null, title: state.title, language: state.language, folder: state.folder, updated_at: null });
 
   const folders = [...new Set([...entries.map((s) => s.folder), ...state.folders].flatMap((path) => {
     const parts = path ? path.split('/') : [];

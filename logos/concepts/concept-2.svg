@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512">
+  <rect width="1024" height="512" rx="56" fill="#0b0d10"/>
+  <g id="icon">
+    <rect x="60" y="76" width="360" height="360" rx="84" fill="#12161c" stroke="#232a33" stroke-width="6"/>
+    <rect x="96" y="124" width="140" height="104" rx="28" fill="#4ade80"/>
+    <rect x="244" y="284" width="140" height="104" rx="28" fill="#38bdf8"/>
+    <path d="M236 176 C296 176 314 224 314 284" fill="none" stroke="#e5e7eb" stroke-width="14" stroke-linecap="round"/>
+    <path d="M244 336 C170 336 166 290 166 236" fill="none" stroke="#4ade80" stroke-width="14" stroke-linecap="round"/>
+    <path d="M142 246 L166 216 L190 246 Z" fill="#4ade80"/>
+  </g>
+  <g id="wordmark">
+    <text x="456" y="310" font-family="Inter, Helvetica, Arial, sans-serif" font-size="116" font-weight="700" letter-spacing="-3" fill="#f3f4f6">Loopline</text>
+  </g>
+</svg>

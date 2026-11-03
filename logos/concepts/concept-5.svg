@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512">
+  <rect width="1024" height="512" rx="56" fill="#0b0d10"/>
+  <g id="icon">
+    <rect x="60" y="76" width="360" height="360" rx="84" fill="#12161c" stroke="#232a33" stroke-width="6"/>
+    <path d="M326 168 A108 108 0 1 0 352 262" fill="none" stroke="#4ade80" stroke-width="26" stroke-linecap="round"/>
+    <path d="M300 120 L372 168 L296 206 Z" fill="#4ade80"/>
+    <path d="M218 198 L218 314 L312 256 Z" fill="#38bdf8" stroke="#38bdf8" stroke-width="10" stroke-linejoin="round"/>
+  </g>
+  <g id="wordmark">
+    <text x="456" y="310" font-family="Inter, Helvetica, Arial, sans-serif" font-size="116" font-weight="700" letter-spacing="-3" fill="#f3f4f6">Loopline</text>
+  </g>
+</svg>

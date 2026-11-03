@@ -1,4 +1,4 @@
-# Engineering IDE
+# Loopline
 
 A browser IDE for C, C++, Lua and Python with a visualizer, a Python timeline tracer, themes, switchable and floating layouts, version history, GitHub export, formatters and linters, and a runner agent that executes code on your own computer.
 

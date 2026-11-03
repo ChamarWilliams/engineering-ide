@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 512">
+  <rect width="1024" height="512" rx="56" fill="#0b0d10"/>
+  <g id="icon">
+    <rect x="60" y="76" width="360" height="360" rx="84" fill="#12161c" stroke="#232a33" stroke-width="6"/>
+    <circle cx="240" cy="256" r="98" fill="none" stroke="#4ade80" stroke-width="26" stroke-linecap="round" stroke-dasharray="440 176" transform="rotate(-10 240 256)"/>
+    <circle cx="278.2" cy="185.7" r="30" fill="#38bdf8"/>
+  </g>
+  <g id="wordmark">
+    <text x="456" y="310" font-family="Inter, Helvetica, Arial, sans-serif" font-size="116" font-weight="700" letter-spacing="-3" fill="#f3f4f6">Loopline</text>
+  </g>
+</svg>

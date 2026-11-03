@@ -50,7 +50,7 @@ async def lifespan(_app):
     yield
 
 
-app = FastAPI(title="Engineering IDE", lifespan=lifespan)
+app = FastAPI(title="Loopline", lifespan=lifespan)
 
 RUN_PATHS = ("/api/run", "/api/trace")
 MULTIUSER = os.environ.get("EIDE_MULTIUSER", "") == "1"
@@ -72,7 +72,7 @@ async def guard(request: Request, call_next):
             except ValueError:
                 ok = False
         if not ok:
-            return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="Engineering IDE"'})
+            return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="Loopline"'})
     if request.method == "POST" and request.url.path in RUN_PATHS:
         who = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
         now = time.monotonic()

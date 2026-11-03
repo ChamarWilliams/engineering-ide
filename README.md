@@ -2,6 +2,12 @@
 
 A browser IDE for C, C++, Lua and Python with a visualizer, a Python timeline tracer, themes, switchable and floating layouts, version history, GitHub export, formatters and linters, and a runner agent that executes code on your own computer.
 
+## About this project
+
+Loopline was built with AI-assisted development (Claude Code) as my entry for a Handshake challenge. It is shared so other people can use it and build on it, not as a finished commercial product. Expect rough edges.
+
+Released under the [MIT License](LICENSE): use it, change it, and build on it freely, keeping the copyright notice.
+
 ## Run it
 
 ```bash

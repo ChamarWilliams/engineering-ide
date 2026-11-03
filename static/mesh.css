@@ -1,0 +1,100 @@
+.view-toggle { display: flex; align-items: center; gap: 2px; align-self: center; margin: 0 10px 0 auto; padding: 2px; border-radius: 7px; background: var(--bg-editor); }
+.view-toggle button { padding: 3px 11px; border: 0; border-radius: 5px; background: none; color: var(--text-muted); font-size: 12px; cursor: pointer; }
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button[aria-pressed="true"] { background: var(--selected); color: var(--text); }
+
+.mesh { display: flex; flex: 1; flex-direction: column; min-height: 0; background: var(--bg-editor); }
+.mesh-bar { display: flex; flex: none; align-items: center; gap: 6px; height: 40px; padding: 0 10px; border-bottom: 1px solid var(--bg-panel); overflow-x: auto; scrollbar-width: none; }
+.mesh-btn { display: inline-flex; flex: none; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--line-soft); border-radius: 6px; background: none; color: var(--text-2); font-size: 12px; cursor: pointer; white-space: nowrap; }
+.mesh-btn:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.mesh-btn:disabled { opacity: 0.4; cursor: default; }
+.mesh-btn.primary { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.mesh-btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 85%, white); color: var(--on-accent); }
+.mesh-btn.active { border-color: rgba(53, 116, 240, 0.7); background: rgba(53, 116, 240, 0.2); color: #60a5fa; font-weight: 600; }
+.mesh-btn.active:hover:not(:disabled) { background: rgba(53, 116, 240, 0.3); }
+.mesh-btn svg { width: 12px; height: 12px; }
+.mesh-seg { display: flex; flex: none; border: 1px solid var(--line-soft); border-radius: 6px; overflow: hidden; }
+.mesh-seg button { height: 24px; padding: 0 8px; border: 0; background: none; color: var(--text-muted); font-size: 11.5px; cursor: pointer; }
+.mesh-seg button[aria-pressed="true"] { background: var(--selected); color: var(--text); }
+.mesh-sep { flex: none; width: 1px; height: 18px; background: var(--line-soft); margin: 0 4px; }
+.mesh-status { flex: none; margin-left: auto; padding-left: 12px; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.mesh-status.bad { color: var(--warn); }
+
+.mesh-view { position: relative; flex: 1; min-height: 0; overflow: hidden; cursor: grab; background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 16%, transparent) 1px, transparent 1.4px); background-size: 24px 24px; touch-action: none; }
+.mesh-view.panning { cursor: grabbing; }
+.mesh-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+.mesh-world.smooth { transition: transform 0.3s ease; }
+.mesh-wires { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+
+.wire-line { fill: none; stroke: color-mix(in srgb, var(--accent) 55%, var(--text-muted)); stroke-width: 2; stroke-linecap: round; transition: stroke 0.15s, opacity 0.15s; }
+.wire.sink .wire-line { stroke-dasharray: 5 5; stroke: var(--text-faint); }
+.wire-hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: help; }
+.wire:hover .wire-line, .wire.hot .wire-line { stroke: var(--accent); stroke-width: 2.6; }
+.mesh-view.focusing .wire:not(.related) .wire-line { opacity: 0.18; }
+.mesh-view.focusing .wire.related .wire-line { stroke: var(--accent); }
+.pulse { fill: var(--accent); filter: drop-shadow(0 0 5px var(--accent)); }
+.pulse.back { fill: var(--green); filter: drop-shadow(0 0 5px var(--green)); }
+
+.cell { position: absolute; width: 320px; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--bg-panel); box-shadow: 0 6px 18px color-mix(in srgb, black 30%, transparent); transition: box-shadow 0.2s, border-color 0.2s, opacity 0.2s; }
+.cell.dragging { box-shadow: 0 14px 30px color-mix(in srgb, black 45%, transparent); z-index: 5; }
+.cell.selected { border-color: var(--accent); }
+.mesh-view.focusing .cell:not(.related) { opacity: 0.42; }
+.cell.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent); }
+.cell.returning { border-color: var(--green); box-shadow: 0 0 0 1px var(--green), 0 0 22px color-mix(in srgb, var(--green) 50%, transparent); }
+.cell-head { position: relative; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 14px; border-bottom: 1px solid var(--line-soft); border-radius: 10px 10px 0 0; cursor: grab; user-select: none; }
+.cell-head::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.cell[data-kind="setup"] .cell-head::before, .cell[data-kind="script"] .cell-head::before { background: var(--warn); }
+.cell[data-kind="entry"] .cell-head::before, .cell.entry .cell-head::before { background: var(--green); }
+.cell[data-kind="sink"] .cell-head::before { background: var(--text-muted); }
+.cell-title { font-weight: 600; white-space: nowrap; }
+.cell-sig { overflow: hidden; color: var(--text-muted); font: 11.5px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.cell-tag { margin-left: auto; flex: none; color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+.cell-edit { display: grid; flex: none; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 5px; background: none; color: var(--text-muted); cursor: pointer; opacity: 0; }
+.cell:hover .cell-edit, .cell.selected .cell-edit { opacity: 1; }
+.cell-edit:hover { background: var(--hover); color: var(--text); }
+.cell-edit svg { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.pin { position: absolute; top: 12px; width: 10px; height: 10px; border: 2px solid var(--accent); border-radius: 50%; background: var(--bg-panel); }
+.pin.in { left: -6px; }
+.pin.out { right: -6px; background: var(--accent); }
+.cell-code { overflow: auto; padding: 6px 0; font: 12px/19px var(--mono); white-space: pre; tab-size: 4; cursor: text; scrollbar-width: thin; }
+.cell-code > span, .cell-code > br { padding-left: 14px; }
+.cell-code:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cell-code.sink-body { min-height: 38px; max-height: 160px; padding: 8px 14px; color: var(--text-2); cursor: default; }
+.cell.editing { z-index: 4; border-color: var(--accent); }
+.cell.editing .cell-code { padding: 0; overflow: hidden; }
+.cell-editor { width: 100%; height: 100%; }
+.cell-mem { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px 10px; border-top: 1px dashed var(--line-soft); font: 11.5px var(--mono); }
+.mem-row { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.mem-name { flex: none; color: var(--text-muted); }
+.mem-val { min-width: 0; overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+.mem-val.chips { display: flex; flex-wrap: wrap; gap: 3px; overflow: visible; white-space: normal; }
+.chip { position: relative; min-width: 24px; padding: 1px 6px; border: 1px solid var(--line-soft); border-radius: 5px; background: var(--bg-editor); text-align: center; }
+.chip.more { color: var(--text-muted); }
+.changed { animation: mem-flash 0.7s ease-out; }
+@keyframes mem-flash { from { background: color-mix(in srgb, var(--accent) 55%, transparent); border-color: var(--accent); } }
+
+.mesh-badge { position: absolute; left: 0; top: 0; z-index: 20; display: flex; flex-direction: column; gap: 5px; max-width: 340px; padding: 9px 11px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-panel); box-shadow: 0 8px 24px var(--shadow); pointer-events: none; font-size: 12px; }
+.badge-title strong { color: var(--text); }
+.badge-site { overflow: hidden; color: var(--text-2); font: 11.5px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.badge-meta { color: var(--text-muted); }
+.badge-run { display: flex; flex-direction: column; gap: 2px; padding-top: 5px; border-top: 1px solid var(--line-soft); color: var(--green); font: 11.5px var(--mono); }
+
+.mesh-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--text-muted); text-align: center; cursor: default; }
+.mesh-empty strong { color: var(--text); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .mesh-world.smooth, .changed { transition: none; animation: none; } }
+
+.snap-guide { position: absolute; z-index: 4; background: var(--accent); opacity: 0.75; pointer-events: none; }
+.cell-lock { display: grid; flex: none; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 5px; background: none; color: var(--text-muted); cursor: pointer; opacity: 0; }
+.cell:hover .cell-lock, .cell.selected .cell-lock, .cell.locked .cell-lock { opacity: 1; }
+.cell-lock:hover { background: var(--hover); color: var(--text); }
+.cell.locked .cell-lock { color: var(--warn); }
+.cell-lock svg { fill: none; stroke: currentColor; stroke-width: 1.4; }
+.cell.locked .cell-head { cursor: default; }
+.cell.found { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 0 26px color-mix(in srgb, var(--accent) 60%, transparent); }
+.cell.rewire-target { border-color: var(--green); box-shadow: 0 0 0 2px var(--green); }
+.wire-end { fill: var(--bg-panel); stroke: var(--accent); stroke-width: 2; opacity: 0; pointer-events: all; cursor: crosshair; }
+.wire:hover .wire-end, .wire.related .wire-end, .wire.rewiring .wire-end { opacity: 1; }
+.wire-end.off { display: none; }
+.wire.rewiring .wire-line { opacity: 0.25; }
+.wire-temp { fill: none; stroke: var(--green); stroke-width: 2.4; stroke-dasharray: 6 5; stroke-linecap: round; pointer-events: none; }
+.cell.collapsed { opacity: 0.95; }

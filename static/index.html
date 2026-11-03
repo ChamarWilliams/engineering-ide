@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Engineering IDE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/mesh.css">
+  <link rel="stylesheet" href="/flow.css">
+  <link rel="stylesheet" href="/minimal.css">
+  <link rel="stylesheet" href="/visualizer.css">
+  <script src="/themes.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 rx=%274%27 fill=%27%237c5cff%27/%3E%3Cpath d=%27M5 5l-2 3 2 3M11 5l2 3-2 3%27 fill=%27none%27 stroke=%27white%27 stroke-width=%271.4%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-menu" viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 16 16"><path d="M4.5 6.5 8 10l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 16 16"><path d="M6.5 4.5 10 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-run" viewBox="0 0 16 16"><path d="M4.5 2.9v10.2c0 .4.4.6.7.4l8-5.1a.5.5 0 0 0 0-.8l-8-5.1a.5.5 0 0 0-.7.4Z" fill="currentColor"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-rerun" viewBox="0 0 16 16"><path d="M12.6 6A5 5 0 1 0 13 9.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M13 2.8V6.3H9.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-clear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="m4.2 11.8 7.6-7.6" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-link" viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M9 7a3 3 0 0 0-4.2 0l-2 2A3 3 0 0 0 7 13.2l.8-.8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-folder-fill" viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" style="fill:var(--pressed);stroke:var(--text-muted)" stroke-width="1" stroke-linejoin="round"/></symbol>
+    <symbol id="i-console" viewBox="0 0 16 16"><path d="M5 3.3v9.4c0 .4.4.6.7.4l7-4.7a.5.5 0 0 0 0-.8l-7-4.7a.5.5 0 0 0-.7.4Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-viz" viewBox="0 0 16 16"><path d="M3.5 13V8.5M6.5 13V4M9.5 13V7M12.5 13V2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-layout" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 2.5v11M6.5 8H14" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-float" viewBox="0 0 16 16"><rect x="5.5" y="2.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 6v6.5a1 1 0 0 0 1 1H11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-dock" viewBox="0 0 16 16"><rect x="2.5" y="3" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 3v10" stroke="currentColor" stroke-width="1.2"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 16 16"><rect x="4" y="3" width="3" height="10" rx="1" fill="currentColor"/><rect x="9" y="3" width="3" height="10" rx="1" fill="currentColor"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 16 16"><path d="M4 3v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12.5 3.6v8.8c0 .4-.4.6-.7.4L6 8.4a.5.5 0 0 1 0-.8l5.8-4.4c.3-.2.7 0 .7.4Z" fill="currentColor"/></symbol>
+    <symbol id="i-next" viewBox="0 0 16 16"><path d="M12 3v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M3.5 3.6v8.8c0 .4.4.6.7.4L10 8.4a.5.5 0 0 0 0-.8L4.2 3.2c-.3-.2-.7 0-.7.4Z" fill="currentColor"/></symbol>
+    <symbol id="i-timeline" viewBox="0 0 16 16"><path d="M2.5 8h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="5" cy="8" r="2" fill="var(--bg-panel)" stroke="currentColor" stroke-width="1.2"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-history" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M2.4 2.6v3h3M8 5v3.2l2 1.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 16 16"><circle cx="4.5" cy="3.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="4.5" cy="12.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="11.5" cy="6" r="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4.5 5.1v5.8M11.5 7.6c0 2.2-2 2.4-5.2 3.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-format" viewBox="0 0 16 16"><path d="M2.5 3.5h11M2.5 6.5h7M2.5 9.5h11M2.5 12.5h7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 16 16"><path d="M6 2.5v3M10 2.5v3M4 5.5h8v2.5a4 4 0 0 1-8 0zM8 12v1.8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M12.4 3.6l-1.2 1.2M4.8 11.2l-1.2 1.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.1a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.1" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+
+  <div class="app">
+    <header class="toolbar">
+      <div class="tb-group">
+        <div class="widget project-widget" title="Engineering IDE">
+          <span class="project-badge">EI</span>
+          <span class="widget-label">Engineering IDE</span>
+        </div>
+      </div>
+
+      <div class="tb-group">
+        <label class="widget run-config" title="Run configuration">
+          <span id="configBadge" class="lang-badge"></span>
+          <span id="configName" class="widget-label"></span>
+          <svg class="chev"><use href="#i-chevron"/></svg>
+          <select id="language" aria-label="Language"></select>
+        </label>
+        <button id="runnerBtn" class="widget" type="button" title="Where code runs">
+          <span id="runnerDot" class="dot"></span>
+          <span id="runnerName" class="widget-label"></span>
+          <svg class="chev"><use href="#i-chevron"/></svg>
+        </button>
+        <button id="runBtn" class="icon-btn run" title="Run (Shift+F10)"><svg><use href="#i-run"/></svg></button>
+        <span id="bench" class="bench" hidden></span>
+        <button id="stopBtn" class="icon-btn stop" title="Stop (Ctrl+F2)" disabled><svg><use href="#i-stop"/></svg></button>
+        <span class="tb-sep"></span>
+        <button id="githubBtn" class="icon-btn" title="GitHub"><svg><use href="#i-branch"/></svg></button>
+        <button id="shareBtn" class="icon-btn" title="Copy share link"><svg><use href="#i-link"/></svg></button>
+        <button id="settingsBtn" class="icon-btn" title="Settings"><svg><use href="#i-gear"/></svg></button>
+      </div>
+    </header>
+
+    <div class="main">
+      <nav class="stripe">
+        <div class="stripe-group">
+          <button class="stripe-btn" data-toggle="files" title="Project"><svg><use href="#i-folder"/></svg></button>
+          <button class="stripe-btn" data-toggle="viz" title="Visualizer"><svg><use href="#i-viz"/></svg></button>
+          <button class="stripe-btn" data-toggle="history" title="History"><svg><use href="#i-history"/></svg></button>
+        </div>
+        <div class="stripe-group">
+          <button class="stripe-btn" data-toggle="timeline" title="Timeline" hidden><svg><use href="#i-timeline"/></svg></button>
+          <button class="stripe-btn" data-toggle="console" title="Run"><svg><use href="#i-console"/></svg></button>
+        </div>
+      </nav>
+
+      <div id="workspace" class="workspace">
+        <aside class="panel" data-panel="files">
+          <div class="tw-header">
+            <span class="tw-title">Project</span>
+            <div class="tw-actions">
+              <button id="treeNewBtn" class="icon-btn sm" title="New file"><svg><use href="#i-plus"/></svg></button>
+              <button class="icon-btn sm" data-float="files" title="Float"><svg><use href="#i-float"/></svg></button>
+              <button class="icon-btn sm" data-hide="files" title="Hide"><svg><use href="#i-close"/></svg></button>
+            </div>
+          </div>
+          <div id="tree" class="tree" role="tree"></div>
+          <div class="edge" data-edge="files"></div>
+          <div class="grip"></div>
+        </aside>
+
+        <section class="panel" data-panel="editor">
+          <div class="tabs">
+            <div id="tabList" class="tab-list" role="tablist" aria-label="Open files"></div>
+            <button id="tabNew" class="icon-btn sm tab-new" type="button" title="New file (Alt+N)"><svg><use href="#i-plus"/></svg></button>
+            <div class="view-toggle" role="group" aria-label="Editor view">
+              <button type="button" data-view="map" aria-pressed="false" title="Project map (Alt+P)">Map</button>
+              <button type="button" data-view="flow" aria-pressed="true" title="Flow view (Alt+M)">Flow</button>
+              <button type="button" data-view="text" aria-pressed="false" title="Text editor (Alt+M)">Text</button>
+            </div>
+          </div>
+          <div id="editor" class="editor"></div>
+          <div id="mesh" class="mesh" hidden></div>
+          <div id="map" class="mesh" hidden></div>
+          <div id="welcome" class="welcome">
+            <strong>No files open</strong>
+            <span>This project is empty. Create a file, or drop files onto the sidebar to import them.</span>
+            <div class="welcome-actions">
+              <button id="welcomeNew" class="mesh-btn primary" type="button">New file</button>
+              <button id="welcomeProject" class="mesh-btn" type="button">New project</button>
+              <button id="welcomeImport" class="mesh-btn" type="button">Import folder</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel" data-panel="viz">
+          <div class="tw-header">
+            <span class="tw-title">Visualizer</span>
+            <div class="tw-actions">
+              <button class="icon-btn sm" data-viz-pos title="Move below the flow"><svg><use href="#i-dock"/></svg></button>
+              <button class="icon-btn sm" data-float="viz" title="Float"><svg><use href="#i-float"/></svg></button>
+              <button class="icon-btn sm" data-hide="viz" title="Hide"><svg><use href="#i-close"/></svg></button>
+            </div>
+          </div>
+          <div class="viz-body">
+            <div id="vizEmpty" class="viz-empty">
+              <svg class="viz-mark"><use href="#i-viz"/></svg>
+              <p class="viz-title">Nothing to visualize yet</p>
+              <p class="viz-text">Trace a Python program in the Timeline layout and its data shows up here.</p>
+            </div>
+            <div id="vizVars" class="viz-vars" hidden></div>
+            <div id="vizOutWrap" hidden>
+              <div class="viz-label">Output</div>
+              <pre id="vizOut" class="viz-out"></pre>
+            </div>
+          </div>
+          <div class="edge" data-edge="viz"></div>
+          <div class="grip"></div>
+        </aside>
+
+        <section class="panel" data-panel="console">
+          <div class="tw-header">
+            <div id="termTabs" class="term-tabs">
+              <button id="runTabBtn" type="button" class="term-tab active"><span id="runBadge" class="lang-badge"></span><span id="runTab"></span></button>
+              <button id="termPlus" type="button" class="term-plus" title="New terminal or SSH connection" aria-label="New terminal">+</button>
+            </div>
+            <span id="runMeta" class="tw-meta"></span>
+            <div class="tw-actions">
+              <button class="icon-btn sm" data-float="console" title="Float"><svg><use href="#i-float"/></svg></button>
+              <button class="icon-btn sm" data-hide="console" title="Hide"><svg><use href="#i-close"/></svg></button>
+            </div>
+          </div>
+          <div class="run-body">
+            <div class="run-gutter">
+              <button id="rerunBtn" class="icon-btn sm run" title="Rerun (Shift+F10)"><svg><use href="#i-rerun"/></svg></button>
+              <button id="stopBtn2" class="icon-btn sm stop" title="Stop (Ctrl+F2)" disabled><svg><use href="#i-stop"/></svg></button>
+              <button id="clearBtn" class="icon-btn sm" title="Clear all"><svg><use href="#i-clear"/></svg></button>
+            </div>
+            <pre id="console" class="console" tabindex="0"></pre>
+          </div>
+          <div id="termHost" class="term-host" hidden></div>
+          <div class="edge" data-edge="console"></div>
+          <div class="grip"></div>
+        </section>
+
+        <aside class="panel" data-panel="history">
+          <div class="tw-header">
+            <span class="tw-title">History</span>
+            <div class="tw-actions">
+              <button class="icon-btn sm" data-hide="history" title="Hide"><svg><use href="#i-close"/></svg></button>
+            </div>
+          </div>
+          <div id="historyList" class="history-list"></div>
+          <div class="grip"></div>
+        </aside>
+
+        <section class="panel" data-panel="timeline" aria-label="Timeline">
+          <div class="tl">
+            <button id="traceBtn" class="tl-btn" type="button" title="Trace the program (Shift+F11)"><svg><use href="#i-run"/></svg><span>Trace</span></button>
+            <div class="tl-controls">
+              <button id="tlPrev" class="icon-btn sm" type="button" aria-label="Previous step" title="Previous step (Alt+Left)" disabled><svg><use href="#i-prev"/></svg></button>
+              <button id="tlPlay" class="icon-btn" type="button" aria-label="Play" title="Play (Alt+Down)" disabled><svg><use href="#i-run"/></svg></button>
+              <button id="tlNext" class="icon-btn sm" type="button" aria-label="Next step" title="Next step (Alt+Right)" disabled><svg><use href="#i-next"/></svg></button>
+            </div>
+            <input id="tlScrub" class="tl-scrub" type="range" min="0" max="0" value="0" step="1" aria-label="Execution step" disabled>
+            <span id="tlLabel" class="tl-label"></span>
+            <select id="tlSpeed" class="tl-speed" aria-label="Playback speed">
+              <option value="0.5">0.5x</option>
+              <option value="1" selected>1x</option>
+              <option value="2">2x</option>
+              <option value="4">4x</option>
+            </select>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer class="statusbar">
+      <div id="statusPath" class="sb-path"></div>
+      <div class="sb-right">
+        <span id="saveState" class="sb-item save-state"></span>
+        <span id="cursorPos" class="sb-item">1:1</span>
+        <span class="sb-item">LF</span>
+        <span class="sb-item">UTF-8</span>
+        <span class="sb-item">4 spaces</span>
+        <span id="statusLang" class="sb-item"></span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head">
+        <h2 id="modalTitle"></h2>
+        <button id="modalClose" class="icon-btn sm" type="button" aria-label="Close"><svg><use href="#i-close"/></svg></button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalActions" class="modal-actions"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+  <script src="/filetypes.js"></script>
+  <script src="/newfile.js"></script>
+  <script src="/projects.js"></script>
+  <script src="/terminals.js"></script>
+  <script src="/palette.js"></script>
+  <script src="/search.js"></script>
+  <script src="/refactor.js"></script>
+  <script src="/imports.js"></script>
+  <script src="/qol.js"></script>
+  <script src="/workspace.js"></script>
+  <script src="/completions.js"></script>
+  <script src="/indent.js"></script>
+  <script src="/visualizer.js"></script>
+  <script src="/timeline.js"></script>
+  <script src="/modal.js"></script>
+  <script src="/runner.js"></script>
+  <script src="/plugins.js"></script>
+  <script src="/settings.js"></script>
+  <script src="/history.js"></script>
+  <script src="/github.js"></script>
+  <script src="/prefs.js"></script>
+  <script src="/mesh.js"></script>
+  <script src="/map.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

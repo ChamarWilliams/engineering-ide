@@ -1,0 +1,8 @@
+fastapi>=0.115
+uvicorn>=0.32
+psycopg[binary]>=3.2; sys_platform == "linux"
+websockets>=13
+ruff>=0.6
+clang-format>=18
+asyncssh>=2.14
+pywinpty>=2.0; sys_platform == "win32"

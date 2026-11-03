@@ -1,0 +1,15 @@
+run = "python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+modules = ["python-3.12"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["gcc", "lua5_4"]
+
+[deployment]
+deploymentTarget = "cloudrun"
+build = ["sh", "-c", "pip install -r requirements.txt"]
+run = ["sh", "-c", "EIDE_TERMINAL=off EIDE_MULTIUSER=1 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80

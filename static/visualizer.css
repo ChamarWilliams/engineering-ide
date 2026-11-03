@@ -1,0 +1,1479 @@
+/* Engineering IDE — Interactive Control Flow, Execution & Loop Visualizer */
+
+.viz-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-editor, #1e1f22);
+  color: var(--text, #dfe1e5);
+  font-family: var(--ui-font, sans-serif);
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* --- Control Header Bar --- */
+.viz-ctrl-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-panel, #2b2d30);
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.viz-ctrl-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.viz-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.viz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--bg-editor, #1e1f22);
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 5px;
+  color: var(--text, #dfe1e5);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.viz-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+}
+
+.viz-btn:hover:not(:disabled) {
+  background: var(--hover, #393b40);
+  border-color: var(--accent, #3574f0);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.viz-btn:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--pressed, #43454a);
+}
+
+.viz-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.viz-btn.primary {
+  background: linear-gradient(135deg, var(--accent, #3574f0), #4f8cf9);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(53, 116, 240, 0.35);
+}
+
+.viz-btn.primary:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(53, 116, 240, 0.55);
+  filter: brightness(1.1);
+}
+
+.viz-btn.loop-step {
+  background: linear-gradient(135deg, rgba(95, 184, 101, 0.18), rgba(95, 184, 101, 0.28));
+  border-color: rgba(95, 184, 101, 0.5);
+  color: #6ee7b7;
+  font-weight: 600;
+}
+
+.viz-btn.loop-step:hover:not(:disabled) {
+  background: rgba(95, 184, 101, 0.35);
+  border-color: var(--green, #5fb865);
+  color: #fff;
+}
+
+.viz-speed-select {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 5px;
+  background: var(--bg-editor, #1e1f22);
+  color: var(--text-2, #b4b8bf);
+  font-size: 11.5px;
+  font-family: var(--mono, monospace);
+  cursor: pointer;
+}
+
+/* Scrubber row */
+.viz-scrub-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-scrub-input {
+  flex: 1;
+  height: 6px;
+  accent-color: var(--accent, #3574f0);
+  cursor: pointer;
+  border-radius: 3px;
+  background: var(--line-soft, #393b40);
+}
+
+.viz-step-counter {
+  font-family: var(--mono, monospace);
+  font-size: 11.5px;
+  color: var(--text-muted, #868a91);
+  white-space: nowrap;
+}
+
+.viz-step-counter strong {
+  color: #fff;
+}
+
+/* --- View Filter Tabs --- */
+.viz-nav-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  border: 1px solid var(--line-soft, #393b40);
+}
+
+.viz-nav-tab {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted, #868a91);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.viz-nav-tab:hover {
+  color: var(--text, #dfe1e5);
+  background: var(--hover, #393b40);
+}
+
+.viz-nav-tab.active {
+  color: #fff;
+  background: var(--selected, #2e436e);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* --- Active Block Visualizer Stage (Matches User Reference Aesthetics) --- */
+.viz-active-stage-canvas {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 420px;
+  background: #18191c;
+  border: 1px solid #2a2e35;
+  border-radius: 10px;
+  padding: 38px 18px 24px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+/* Zoom pill in bottom right (like Image 1) */
+.viz-zoom-pill {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: #1e222a;
+  border: 1px solid #333a45;
+  border-radius: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #94a3b8;
+  z-index: 10;
+  user-select: none;
+}
+
+.viz-zoom-btn {
+  background: none;
+  border: 0;
+  color: #cbd5e1;
+  font-family: var(--mono, monospace);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.viz-zoom-btn:hover { color: #fff; }
+
+/* The Active Block Outer Container with Dashed Outline */
+.viz-active-block-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  background: rgba(30, 34, 42, 0.45);
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 22px 18px 18px;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.viz-active-block-card.active-loop {
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: none;
+}
+
+.viz-active-block-card.active-return {
+  border-color: #4ade80;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.15);
+}
+
+/* Attached Solid Top-Left Tab (like Image 4: 'loop iteration 1 \n i = 0', Image 2: 'Main Block') */
+.viz-attached-tab {
+  position: absolute;
+  top: -1px;
+  left: 14px;
+  transform: translateY(-100%);
+  background: #18191c;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-bottom: 2px solid #18191c;
+  border-radius: 6px 6px 0 0;
+  padding: 5px 12px;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  color: #e2e8f0;
+  line-height: 1.45;
+  white-space: pre-line;
+  z-index: 3;
+}
+
+.viz-active-block-card.active-loop .viz-attached-tab {
+  border-color: rgba(255, 255, 255, 0.25);
+  border-bottom-color: #18191c;
+}
+
+.viz-active-block-card.active-return .viz-attached-tab {
+  border-color: #4ade80;
+  border-bottom-color: #18191c;
+  color: #4ade80;
+}
+
+/* Inner Tab / Tag like 'Variables' or 'Output' */
+.viz-sub-tab {
+  display: inline-block;
+  padding: 3px 9px;
+  background: #1e222a;
+  border: 1px solid #333a45;
+  border-radius: 5px 5px 0 0;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #93c5fd;
+  margin-bottom: -1px;
+  z-index: 2;
+  position: relative;
+}
+
+.viz-sub-tab.peach { color: #f87171; }
+.viz-sub-tab.green { color: #4ade80; }
+
+/* 2-Column Variables Table (like Image 2 & 3) */
+.viz-var-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #2d333d;
+  border-radius: 6px;
+  background: #1e222a;
+  overflow: hidden;
+  font-family: var(--mono, monospace);
+  font-size: 12.5px;
+}
+
+.viz-var-table tr:not(:last-child) td {
+  border-bottom: 1px solid #2d333d;
+}
+
+.viz-var-table td {
+  padding: 7px 14px;
+}
+
+.viz-var-table .var-key {
+  color: #94a3b8;
+  border-right: 1px solid #2d333d;
+  font-weight: 500;
+  width: 48%;
+}
+
+.viz-var-table .var-val {
+  color: #ffffff;
+  font-weight: 600;
+  text-align: right;
+  width: 52%;
+}
+
+/* Output Console Box (like Image 3) */
+.viz-output-block {
+  position: relative;
+  width: 100%;
+  border: 1px solid #333a45;
+  border-radius: 8px;
+  background: #1f2228;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  box-sizing: border-box;
+}
+
+.viz-output-tab {
+  position: absolute;
+  top: -1px;
+  left: 12px;
+  transform: translateY(-100%);
+  background: #18191c;
+  border: 1px solid #333a45;
+  border-bottom: 1px solid #1f2228;
+  border-radius: 5px 5px 0 0;
+  padding: 3px 9px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #f87171;
+}
+
+.viz-output-text {
+  font-family: var(--mono, monospace);
+  font-size: 12.5px;
+  color: #e2e8f0;
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* Array Bars Stage (like Image 4) */
+.viz-bars-stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+  height: 190px;
+  padding: 10px 10px 8px;
+  position: relative;
+  margin: 8px 0;
+}
+
+.viz-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.viz-bar-rect {
+  width: 42px;
+  border-radius: 6px;
+  background: #23272e;
+  border: 1px solid #333a45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-family: var(--mono, monospace);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.viz-bar-rect.active {
+  border: 1.5px solid #4ade80;
+  background: rgba(74, 222, 128, 0.18);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.25);
+  color: #ffffff;
+}
+
+.viz-bar-label {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.viz-bar-label.active {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+/* Curved Swap Arrow under Bars (like Image 4) */
+.viz-swap-arc-svg {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  pointer-events: none;
+}
+
+/* Loop Comparison Narrative (like Image 4) */
+.viz-loop-narrative {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 12.5px;
+  margin-top: 14px;
+  color: #94a3b8;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.viz-narrative-green { color: #4ade80; font-weight: 500; }
+
+.viz-pill-val {
+  display: inline-block;
+  padding: 1px 7px;
+  background: #181b20;
+  border: 1px solid #333a45;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Side-by-side Connected Frames (like Image 2 & 3) */
+.viz-split-block-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 520px;
+  gap: 16px;
+  position: relative;
+}
+
+.viz-frame-box {
+  flex: 1;
+  position: relative;
+}
+
+.viz-wire-bridge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.viz-return-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  background: #181b20;
+  border: 1px solid #4ade80;
+  border-radius: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #4ade80;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Active Block Mount Area inside Canvas */
+.viz-active-block-mount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 620px;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: center center;
+}
+
+/* Pointer Tracking & Linked List Canvas (Image 1) */
+.viz-ptr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+  position: relative;
+  font-family: var(--mono, monospace);
+}
+
+.viz-ptr-status-box {
+  background: #181c24;
+  border: 1px solid #2e3846;
+  border-radius: 8px;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  margin-bottom: 4px;
+}
+
+.viz-dotted-divider {
+  width: 100%;
+  border-top: 1.5px dotted rgba(255, 255, 255, 0.22);
+  margin: 16px 0;
+}
+
+.viz-new-node-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.viz-new-node-label {
+  font-size: 11px;
+  color: #38bdf8;
+  letter-spacing: 0.04em;
+}
+
+.viz-new-node-box {
+  display: inline-flex;
+  border: 1.5px solid #38bdf8;
+  border-radius: 6px;
+  background: #192231;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.viz-new-node-box .viz-node-val {
+  padding: 6px 14px;
+  color: #fff;
+  font-weight: 700;
+  border-right: 1.5px solid #38bdf8;
+  font-size: 13px;
+}
+
+.viz-new-node-box .viz-node-ptr {
+  width: 28px;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.viz-node-chain-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  position: relative;
+}
+
+.viz-node-chain-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  position: relative;
+  overflow-x: auto;
+  padding: 16px 4px 4px;
+}
+
+.viz-node-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.viz-node-cur-tag {
+  position: absolute;
+  top: -19px;
+  font-size: 10px;
+  color: #fdba74;
+  border: 1px dashed #fdba74;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.viz-node-box {
+  display: inline-flex;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: #1e2430;
+  overflow: hidden;
+}
+
+.viz-node-box.active-current {
+  border-color: #fdba74;
+  box-shadow: 0 0 12px rgba(253, 186, 116, 0.3);
+}
+
+.viz-node-val {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: #f1f5f9;
+  font-weight: 600;
+  border-right: 1px solid #334155;
+  min-width: 18px;
+  text-align: center;
+}
+
+.viz-node-ptr {
+  width: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.viz-node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.viz-node-dot.green {
+  background: #4ade80;
+  box-shadow: 0 0 8px #4ade80;
+}
+
+.viz-node-lbl {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.viz-node-wire {
+  display: flex;
+  align-items: center;
+  color: #64748b;
+  font-size: 14px;
+  padding-bottom: 24px;
+}
+
+.viz-node-wire.green {
+  color: #4ade80;
+}
+
+/* Call Stack & Recursion (Image 2) */
+.viz-call-stage {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 540px;
+  gap: 22px;
+  position: relative;
+}
+
+.viz-stack-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  position: relative;
+}
+
+.viz-stack-frame {
+  position: relative;
+  width: 100%;
+  max-width: 240px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 14px 12px 12px;
+  background: rgba(30, 34, 42, 0.45);
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+.viz-stack-frame.active-frame {
+  border: 1.5px dashed #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);
+}
+
+.viz-stack-arrow-down {
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.viz-stack-arrow-down.active {
+  color: #38bdf8;
+}
+
+.viz-call-curve-svg {
+  position: absolute;
+  top: 18px;
+  left: 190px;
+  width: 110px;
+  height: 60px;
+  pointer-events: none;
+}
+
+/* --- Flow Diagram Stage (The Core Interactive Graphic) --- */
+.viz-flow-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: radial-gradient(circle at 50% 10%, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.viz-flow-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.viz-flow-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.viz-flow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-family: var(--mono, monospace);
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.viz-flow-badge .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-glow 1.5s infinite;
+}
+
+/* SVG Flow Canvas */
+.viz-flow-svg-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 380px;
+  max-height: 520px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: auto;
+}
+
+.viz-flow-svg {
+  width: 100%;
+  height: 100%;
+  min-width: 420px;
+  display: block;
+}
+
+/* SVG Flow Diagram Nodes */
+.flow-node {
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.flow-node-box {
+  fill: #1e293b;
+  stroke: #334155;
+  stroke-width: 1.5;
+  rx: 8;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+}
+
+.flow-node-title {
+  font-family: var(--ui-font, sans-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: #e2e8f0;
+  pointer-events: none;
+}
+
+.flow-node-sub {
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  fill: #94a3b8;
+  pointer-events: none;
+}
+
+/* Node Types */
+.flow-node.caller .flow-node-box {
+  stroke: #64748b;
+  stroke-dasharray: 4 2;
+}
+
+.flow-node.func-entry .flow-node-box {
+  fill: #172554;
+  stroke: #3b82f6;
+  stroke-width: 2;
+}
+
+.flow-node.loop-head .flow-node-box {
+  fill: #14532d;
+  stroke: #22c55e;
+  stroke-width: 2;
+}
+
+.flow-node.loop-body .flow-node-box {
+  fill: #064e3b;
+  stroke: #10b981;
+}
+
+.flow-node.exit-node .flow-node-box {
+  fill: #3b0764;
+  stroke: #a855f7;
+}
+
+/* Active Highlighted Node */
+.flow-node.active .flow-node-box {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 12px currentColor);
+  transform: scale(1.03);
+  transform-origin: center;
+}
+
+.flow-node.func-entry.active .flow-node-box {
+  fill: #1d4ed8;
+  stroke: #60a5fa;
+  box-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
+}
+
+.flow-node.loop-head.active .flow-node-box {
+  fill: #15803d;
+  stroke: #4ade80;
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
+  animation: pulse-border 1.2s infinite alternate ease-in-out;
+}
+
+.flow-node.loop-body.active .flow-node-box {
+  fill: #047857;
+  stroke: #34d399;
+  box-shadow: 0 0 20px rgba(52, 211, 153, 0.8);
+}
+
+.flow-node.exit-node.active .flow-node-box {
+  fill: #7e22ce;
+  stroke: #c084fc;
+}
+
+.flow-node.caller-return .flow-node-box {
+  fill: #1e1b4b;
+  stroke: #818cf8;
+}
+
+.flow-node.caller-return.active .flow-node-box {
+  fill: #312e81;
+  stroke: #a5b4fc;
+  box-shadow: 0 0 20px rgba(165, 180, 252, 0.8);
+}
+
+.flow-wire-label {
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  fill: #94a3b8;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.flow-wire-label.active {
+  fill: #38bdf8;
+  font-weight: 700;
+}
+
+.flow-wire-label.loopback-label {
+  fill: #34d399;
+  font-weight: 700;
+}
+
+/* SVG Flow Diagram Wires */
+.flow-wire {
+  fill: none;
+  stroke: #475569;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: all 0.25s ease;
+}
+
+.flow-wire.active {
+  stroke: #38bdf8;
+  stroke-width: 2.8;
+  filter: drop-shadow(0 0 6px #38bdf8);
+}
+
+/* Loopback Back-Edge Wire (The core cycle loop) */
+.flow-wire.loopback {
+  stroke: #10b981;
+  stroke-dasharray: 6 3;
+}
+
+.flow-wire.loopback.active {
+  stroke: #34d399;
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 10px #34d399);
+  animation: dash-flow 0.8s linear infinite;
+}
+
+/* Traveling Animated Comet Particle */
+.flow-comet {
+  fill: #38bdf8;
+  filter: drop-shadow(0 0 8px #38bdf8);
+  r: 5;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.flow-comet.active {
+  opacity: 1;
+}
+
+.flow-comet.loopback-comet {
+  fill: #4ade80;
+  filter: drop-shadow(0 0 12px #4ade80);
+}
+
+/* Iteration badge on loopback wire */
+.loopback-tag {
+  fill: #064e3b;
+  stroke: #34d399;
+  stroke-width: 1.2;
+  rx: 10;
+}
+
+.loopback-text {
+  font-family: var(--mono, monospace);
+  font-size: 9.5px;
+  font-weight: 800;
+  fill: #6ee7b7;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* --- Launchpad Empty State --- */
+.viz-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 20%, rgba(53, 116, 240, 0.12), transparent 70%), var(--bg-panel, #2b2d30);
+  border: 1px dashed var(--line-soft, #393b40);
+  border-radius: 12px;
+  gap: 14px;
+  margin: auto 0;
+}
+
+.viz-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(53, 116, 240, 0.2), rgba(168, 85, 247, 0.2));
+  border: 1px solid rgba(53, 116, 240, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #3574f0);
+  box-shadow: 0 0 20px rgba(53, 116, 240, 0.2);
+  animation: pulse-glow 3s infinite alternate ease-in-out;
+}
+
+.viz-empty-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.viz-empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.viz-empty-desc {
+  margin: 0;
+  max-width: 38ch;
+  font-size: 12.5px;
+  color: var(--text-muted, #868a91);
+  line-height: 1.5;
+}
+
+.viz-samples-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint, #6f737a);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.viz-samples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.viz-sample-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--bg-editor, #1e1f22);
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.viz-sample-btn:hover {
+  border-color: var(--accent, #3574f0);
+  background: var(--hover, #393b40);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.viz-sample-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.viz-sample-hint {
+  font-size: 10.5px;
+  color: var(--text-faint, #6f737a);
+}
+
+/* --- Plain-English Step Narrator Card --- */
+.viz-narrative-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.viz-narrative-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.viz-narrative-content {
+  flex: 1;
+}
+
+.viz-narrative-line {
+  font-family: var(--mono, monospace);
+  font-weight: 700;
+  color: #38bdf8;
+  margin-right: 4px;
+}
+
+/* --- Animated Array / Data Graphics Stage --- */
+.viz-stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-panel, #2b2d30);
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.viz-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.viz-stage-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.viz-stage-badge {
+  font-size: 10.5px;
+  font-family: var(--mono, monospace);
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #868a91);
+}
+
+/* Bars canvas */
+.viz-bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 160px;
+  padding: 30px 10px 10px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.viz-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  flex: 1;
+  max-width: 54px;
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Pointer pins hovering above bars */
+.viz-pointer-stack {
+  position: absolute;
+  top: -26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.viz-pointer-pill {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--mono, monospace);
+  font-size: 9.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #000;
+  background: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+  animation: bounce-subtle 1.2s infinite ease-in-out;
+}
+
+.viz-pointer-pill.p-j {
+  background: #f472b6;
+  box-shadow: 0 0 8px rgba(244, 114, 182, 0.7);
+}
+
+.viz-pointer-pill.p-pivot {
+  background: #fbbf24;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.7);
+}
+
+.viz-pointer-pill.p-mid {
+  background: #a78bfa;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.7);
+}
+
+.viz-pointer-arrow {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #38bdf8;
+}
+
+.viz-pointer-pill.p-j + .viz-pointer-arrow { border-top-color: #f472b6; }
+.viz-pointer-pill.p-pivot + .viz-pointer-arrow { border-top-color: #fbbf24; }
+.viz-pointer-pill.p-mid + .viz-pointer-arrow { border-top-color: #a78bfa; }
+
+/* The actual graphical bar */
+.viz-bar-track {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.viz-bar-body {
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.3);
+  transition: height 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s, box-shadow 0.25s;
+  min-height: 8px;
+}
+
+.viz-bar-col.swapping .viz-bar-body {
+  background: linear-gradient(180deg, #c084fc, #9333ea);
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.7);
+}
+
+.viz-bar-col.active-point .viz-bar-body {
+  background: linear-gradient(180deg, #38bdf8, #0284c7);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+.viz-bar-value {
+  margin-top: 4px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.viz-bar-idx {
+  font-family: var(--mono, monospace);
+  font-size: 9.5px;
+  color: var(--text-faint, #6f737a);
+}
+
+/* --- Variable Sparklines & Scope Watch --- */
+.viz-vars-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.viz-vars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.viz-var-card {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: var(--bg-panel, #2b2d30);
+  border: 1px solid var(--line-soft, #393b40);
+  border-radius: 8px;
+  gap: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.viz-var-card.mutated {
+  border-color: var(--accent, #3574f0);
+  box-shadow: 0 0 12px rgba(53, 116, 240, 0.35);
+  animation: flash-card 0.6s ease;
+}
+
+.viz-var-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.viz-var-name {
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.viz-var-type {
+  font-size: 9.5px;
+  color: var(--text-faint, #6f737a);
+  font-family: var(--mono, monospace);
+}
+
+.viz-var-value {
+  font-family: var(--mono, monospace);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  word-break: break-all;
+}
+
+.viz-var-sparkline {
+  width: 100%;
+  height: 22px;
+  margin-top: 2px;
+}
+
+.viz-var-sparkline path {
+  fill: none;
+  stroke: var(--accent, #3574f0);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Animations */
+@keyframes pulse-glow {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.08); filter: brightness(1.25); }
+}
+
+@keyframes pulse-border {
+  0% { stroke: #22c55e; filter: drop-shadow(0 0 6px #22c55e); }
+  100% { stroke: #4ade80; filter: drop-shadow(0 0 16px #4ade80); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes flash-card {
+  0% { background: rgba(53, 116, 240, 0.35); }
+  100% { background: var(--bg-panel, #2b2d30); }
+}
+
+@keyframes dash-flow {
+  from { stroke-dashoffset: 18; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Handoff Banner when Flow Mode inspects a function's loops */
+.viz-handoff-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(53, 116, 240, 0.25), rgba(168, 85, 247, 0.25));
+  border: 1px solid rgba(53, 116, 240, 0.5);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(53, 116, 240, 0.25);
+  animation: pulse-glow 2.5s infinite alternate ease-in-out;
+}
+
+.viz-handoff-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.viz-handoff-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8;
+  animation: pulse-glow 1s infinite alternate;
+}
+
+
+/* --- Quiet skin --- */
+.viz-body { gap: 10px; padding: 10px 12px; }
+.viz-ctrl-bar { flex-direction: row; align-items: center; gap: 6px; padding: 0; background: none; border: 0; box-shadow: none; }
+.viz-ctrl-bar .viz-btn { height: 24px; padding: 0 8px; background: none; border: 0; border-radius: 5px; box-shadow: none; color: var(--text-2, #b4b8bf); font-size: 14px; transform: none; filter: none; }
+.viz-ctrl-bar .viz-btn:hover:not(:disabled) { background: var(--hover, #393b40); color: var(--text, #dfe1e5); transform: none; box-shadow: none; filter: none; }
+.viz-ctrl-bar .viz-btn.primary { background: var(--accent, #3574f0); color: var(--on-accent, #fff); font-size: 12px; }
+.viz-ctrl-bar .viz-btn.primary:hover:not(:disabled) { background: var(--accent, #3574f0); filter: brightness(1.1); color: var(--on-accent, #fff); }
+.viz-ctrl-bar .viz-scrub-input { flex: 1; min-width: 40px; }
+.viz-ctrl-bar .viz-step-counter { font: 11px var(--mono, monospace); color: var(--text-muted, #868a91); }
+.viz-ctrl-bar .viz-speed-select { height: 22px; border: 0; background: none; font-size: 11px; }
+.viz-active-stage-canvas { padding: 0; min-height: 0; background: none; border: 0; box-shadow: none; }
+.viz-active-block-card { padding: 0 !important; max-width: none !important; background: none !important; border: 0 !important; box-shadow: none !important; }
+.viz-attached-tab { position: static !important; display: block; padding: 0 0 8px !important; border: 0 !important; background: none !important; box-shadow: none !important; color: var(--text-muted, #868a91) !important; font-size: 11px; transform: none !important; }
+.viz-attached-tab span { color: inherit !important; }
+.viz-bars-stage { background: none !important; border: 0 !important; box-shadow: none !important; }
+.viz-bar-rect { box-shadow: none !important; background: var(--line, #43454a) !important; border: 0 !important; border-radius: 4px; color: var(--text-2, #b4b8bf); }
+.viz-bar-rect.active { background: color-mix(in srgb, #4ade80 35%, transparent) !important; color: var(--text, #dfe1e5); }
+.viz-loop-narrative { margin-top: 10px; font-size: 12px; color: var(--text-muted, #868a91); }
+.viz-loop-narrative + .viz-var-table { display: none; }
+.viz-handoff-banner { padding: 4px 0; background: none; border: 0; box-shadow: none; font-size: 11px; color: var(--text-muted, #868a91); }
+
+/* --- Concurrent loop lanes: one quiet row per loop --- */
+.viz-lanes { display: flex; flex-direction: column; width: 100%; border-top: 1px solid var(--line-soft, #393b40); }
+.viz-lanes[hidden] { display: none; }
+.viz-lane { display: grid; grid-template-columns: minmax(60px, auto) 1fr auto auto; align-items: baseline; gap: 2px 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft, #393b40); font: 12px var(--mono, monospace); }
+.viz-lane-fn { color: var(--text-faint, #6f737a); }
+.viz-lane-stmt { color: var(--text-2, #b4b8bf); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.viz-lane.inner .viz-lane-stmt { color: var(--text, #dfe1e5); }
+.viz-lane-val { color: #38bdf8; }
+.viz-lane-count { min-width: 34px; text-align: right; color: #4ade80; }
+.viz-lane-bar { grid-column: 1 / -1; height: 2px; background: var(--line-soft, #393b40); overflow: hidden; }
+.viz-lane-bar b { display: block; height: 100%; background: #4ade8099; transition: width 0.25s ease; }
+.viz-lane.hit .viz-lane-bar b { background: #4ade80; }
+.viz-lane-bar.open b { background: repeating-linear-gradient(90deg, #4ade8088 0 8px, #4ade8022 8px 16px); animation: viz-lane-slide 1s linear infinite; }
+@keyframes viz-lane-slide { to { background-position: 16px 0; } }
+
+/* --- Visualizer docked below the flow --- */
+.panel[data-panel="viz"][data-pos="bottom"] #vizActiveStage { flex-direction: row !important; align-items: flex-start; gap: 16px; }
+.panel[data-panel="viz"][data-pos="bottom"] .viz-lanes { flex: 0 0 340px; width: 340px; }
+.panel[data-panel="viz"][data-pos="bottom"] .viz-active-stage-canvas { flex: 1; min-width: 0; }
+
+/* --- Bars on a shared baseline, arc below the labels, motion --- */
+.viz-bars-wrap { margin: 6px auto 0; }
+.viz-bars-wrap .viz-bars-stage { height: 176px; gap: 16px; margin: 0; padding: 0; justify-content: flex-start; align-items: flex-end; }
+.viz-bars-wrap .viz-bar-item { gap: 6px; }
+.viz-bars-wrap .viz-bar-rect { width: 100%; transition: background 0.25s ease, color 0.25s ease; }
+.viz-bars-wrap .viz-bar-label { height: 16px; line-height: 16px; white-space: nowrap; }
+.viz-bars-wrap .viz-swap-arc-svg { position: static; display: block; width: auto; height: 30px; overflow: visible; }
+.viz-arc-path { stroke-dasharray: 200; animation: viz-draw 0.5s ease-out both; }
+.viz-arc-path.keep { stroke: var(--text-faint, #6f737a); stroke-dasharray: 4 4; animation: none; opacity: 0.6; }
+@keyframes viz-draw { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
+.viz-active-block-mount.enter > * { animation: viz-enter 0.28s ease-out; }
+@keyframes viz-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.viz-stack-frame.drop-in { animation: viz-drop 0.45s cubic-bezier(.3,1.3,.5,1); }
+@keyframes viz-drop { from { opacity: 0; transform: translateY(-26px); } to { opacity: 1; transform: none; } }
+.viz-lane-count { transition: color 0.2s; }
+.viz-lane.hit .viz-lane-count { animation: viz-tick 0.4s ease-out; }
+@keyframes viz-tick { from { transform: scale(1.35); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .viz-arc-path, .viz-active-block-mount.enter > *, .viz-stack-frame.drop-in { animation: none; } }

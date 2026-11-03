@@ -60,7 +60,7 @@ const GitHub = (() => {
     });
     let prUrl = null;
     if (pr && target !== base) {
-      const opened = await gh('POST', `/repos/${repo}/pulls`, { title: message, head: target, base, body: 'Opened from Engineering IDE.' });
+      const opened = await gh('POST', `/repos/${repo}/pulls`, { title: message, head: target, base, body: 'Opened from Loopline.' });
       prUrl = opened.html_url;
     }
     return { commitUrl: saved.commit.html_url, fileUrl: saved.content.html_url, prUrl, branch: target };

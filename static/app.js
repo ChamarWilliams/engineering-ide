@@ -255,9 +255,9 @@ function renderChrome() {
   syncFlowable();
   Qol.visit(state.tabKey);
   el.statusLang.textContent = lang.label;
-  document.title = `${name} – Engineering IDE`;
+  document.title = `${name} – Loopline`;
 
-  const parts = [['folder', 'Engineering IDE'], ['folder', 'sessions'], ['file', name]];
+  const parts = [['folder', 'Loopline'], ['folder', 'sessions'], ['file', name]];
   const target = el.statusPath;
   target.replaceChildren();
   parts.forEach(([, text], i) => {
@@ -630,6 +630,14 @@ function sessionMenu(e, s) {
   ]);
 }
 
+function unsavedMenu(e) {
+  e.preventDefault();
+  showMenu(e.clientX, e.clientY, [
+    { label: 'Rename…', run: renameCurrent },
+    { label: 'Close', run: () => closeTab(state.tabKey) },
+  ]);
+}
+
 function folderMenu(e, path) {
   e.preventDefault();
   showMenu(e.clientX, e.clientY, [
@@ -681,7 +689,7 @@ function renderTree() {
   const rows = [];
   const rootName = document.createElement('span');
   rootName.className = 'name';
-  rootName.textContent = 'Engineering IDE';
+  rootName.textContent = 'Loopline';
   const rootPath = document.createElement('span');
   rootPath.className = 'root-path';
   rootPath.textContent = '~/sessions';
@@ -741,7 +749,7 @@ function renderTree() {
       del.addEventListener('click', (e) => { e.stopPropagation(); deleteSession(s); });
       parts.push(del);
     }
-    rows.push(treeRow(depth, parts, { active, onMenu: s.id ? (e) => sessionMenu(e, s) : undefined, onClick: s.id ? () => openSession(s.id).then(() => { if (currentView === 'map') setView(Prefs.get('openAs') === 'text' ? 'text' : 'flow'); }) : undefined }));
+    rows.push(treeRow(depth, parts, { active, onMenu: s.id ? (e) => sessionMenu(e, s) : unsavedMenu, onClick: s.id ? () => openSession(s.id).then(() => { if (currentView === 'map') setView(Prefs.get('openAs') === 'text' ? 'text' : 'flow'); }) : undefined }));
   }
   if (!entries.length && !folders.length) {
     const empty = document.createElement('div');
@@ -1153,6 +1161,7 @@ function initEditor() {
 function init() {
   initEditor();
   bindUi();
+  el.tree.addEventListener('contextmenu', (e) => e.preventDefault());
   History.init({ editor: () => editor, id: () => state.id, dirty: () => state.dirty, api, toast, reload: reloadCurrent });
   Plugins.init({ editor: () => editor, api, toast });
   Runner.init({ api, toast });

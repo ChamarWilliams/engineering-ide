@@ -120,7 +120,7 @@ const Plugins = (() => {
     const ed = deps.editor();
     for (const lang of LANGS) {
       monaco.languages.registerDocumentFormattingEditProvider(lang, {
-        displayName: 'Engineering IDE',
+        displayName: 'Loopline',
         provideDocumentFormattingEdits: (model) => formatEdits(model),
       });
     }

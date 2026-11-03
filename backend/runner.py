@@ -9,6 +9,8 @@ import threading
 import time
 from functools import cache, partial
 
+from . import tracers
+
 RUN_TIMEOUT = 5.0
 COMPILE_TIMEOUT = 15.0
 MEMORY_LIMIT = 256 * 1024 * 1024
@@ -61,7 +63,7 @@ NAMES = {
     "c": "gcc", "cpp": "g++", "lua": "lua", "javascript": "Node.js", "typescript": "Node.js", "shell": "bash",
     "go": "Go", "rust": "rustc", "java": "a JDK",
 }
-LARGE_VM = {"javascript", "typescript", "go", "java"}  # runtimes that reserve more address space than RLIMIT_AS allows
+LARGE_VM = {"javascript", "typescript", "go", "java", "gdb", "node"}  # runtimes that reserve more address space than RLIMIT_AS allows
 SOURCE_FILES = {"javascript": "main.js", "typescript": "main.ts", "shell": "main.sh", "go": "main.go", "rust": "main.rs", "java": "Main.java"}
 
 
@@ -180,9 +182,11 @@ def _read(path):
     return data[:OUTPUT_LIMIT].decode("utf-8", errors="replace"), len(data) > OUTPUT_LIMIT
 
 
-def _step(run, phase, cmd, workdir, timeout, limited, sandbox=None, language=None):
+def _step(run, phase, cmd, workdir, timeout, limited, sandbox=None, language=None, extra_env=None):
     shown = cmd
     env = _child_env(workdir)
+    if extra_env:
+        env.update(extra_env)
     if sandbox:
         run.sandbox, run.container = sandbox, f"eide-{os.urandom(4).hex()}"
         cmd = sandbox.argv(language, phase, cmd, workdir, run.container)
@@ -483,8 +487,7 @@ def run_trace(run_id, language, code, sandbox=None):
         "stopped": False, "error": None, "duration_ms": 0,
     }
     if language != "python":
-        result["error"] = "Tracing is only available for Python right now."
-        return result
+        return _trace_other(run_id, language, code, sandbox, result)
 
     run = _Run()
     with _runs_lock:
@@ -502,6 +505,49 @@ def run_trace(run_id, language, code, sandbox=None):
             if os.path.exists(path) and os.path.getsize(path) <= TRACE_LIMIT:
                 with open(path, encoding="utf-8") as f:
                     result["trace"] = json.load(f)
+    finally:
+        with _runs_lock:
+            _runs.pop(run_id, None)
+    result["stopped"] = run.stopped
+    result["duration_ms"] = round((time.perf_counter() - started) * 1000)
+    return result
+
+
+def _trace_other(run_id, language, code, sandbox, result):
+    if sandbox:
+        result["error"] = "Tracing in the isolated sandbox is only available for Python."
+        return result
+    plan, error = tracers.plan(language, toolchain())
+    if error:
+        result["error"] = error
+        return result
+
+    run = _Run()
+    with _runs_lock:
+        _runs[run_id] = run
+    started = time.perf_counter()
+    try:
+        with tempfile.TemporaryDirectory(prefix="eide-", ignore_cleanup_errors=True) as workdir:
+            files = {plan["source"]: code, **plan["files"]}
+            for name, text in files.items():
+                with open(os.path.join(workdir, name), "w", encoding="utf-8", newline="\n") as f:
+                    f.write(text)
+            if plan["compile"]:
+                built = _step(run, "compile", plan["compile"], workdir, COMPILE_TIMEOUT, False, None, language)
+                if built["exit_code"] != 0:
+                    result.update(stderr=built["stderr"] or built["stdout"], exit_code=built["exit_code"], timed_out=built["timed_out"])
+                    first = next((ln.strip() for ln in (built["stderr"] or "").splitlines() if "error" in ln.lower()), "")
+                    result["error"] = f"Compile error: {first}" if first else "The program did not compile, so there is nothing to trace."
+                    return result
+            step = _step(run, "trace", plan["run"], workdir, tracers.TRACE_TIMEOUT, True, None, plan["label"], plan["env"])
+            result.update(stderr=step["stderr"], exit_code=step["exit_code"], timed_out=step["timed_out"])
+            result["trace"] = tracers.read_trace(workdir, plan["parse"])
+            if result["trace"]:
+                result["trace"]["language"] = language
+                if step["timed_out"] and not result["trace"].get("cut"):
+                    result["trace"]["cut"] = "time"
+            elif not result["stderr"].strip():
+                result["error"] = "The tracer produced no steps."
     finally:
         with _runs_lock:
             _runs.pop(run_id, None)

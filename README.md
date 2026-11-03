@@ -24,7 +24,7 @@ On Replit the `.replit` file does the same and installs `gcc` and Lua through Ni
 | Area | Where | Notes |
 | --- | --- | --- |
 | Editor, themes, layouts, floating panels | `static/app.js`, `themes.js`, `workspace.js` | Layout and theme choices persist per browser |
-| Timeline and visualizer | `static/timeline.js`, `visualizer.js`, `backend/runner.py` (`TRACER`) | Python only, capped at 1500 steps |
+| Timeline and visualizer | `static/timeline.js`, `visualizer.js`, `backend/runner.py`, `backend/tracers.py`, `backend/tracer_scripts/` | Python, JS, TS, Lua, shell, Java, C, C++, Rust, Go; capped at 1500 steps |
 | Completions, snippets, indent colours | `static/completions.js`, `indent.js` | Hand-written library tables, not a language server |
 | Charts and tables from Python | `backend/runner.py` (`RUNNER`) | `display(df)` and matplotlib figures render in the console |
 | Version history, diff, blame, restore | `backend/history.py`, `static/history.js` | Last 200 saves per file |
@@ -58,7 +58,7 @@ How it is protected:
 - Replit's sandbox has no outbound network, so cloud SDK code only reaches a cloud through your own agent.
 - Memory limits on the server runner use POSIX rlimits and are not enforced on Windows.
 - Importing every bundled library at once can exceed the five-second run limit.
-- Tracing supports Python only.
+- Tracing C, C++, Rust and Go needs gdb on the server; Java needs a JDK. Single-line infinite loops stop gdb stepping and return a partial trace.
 - StyLua is not on PyPI. Install it separately and put it on PATH to format Lua.
 - Docker mode was tested for Python only (python:3.12-slim). The C, C++ and Lua images and the data-science image are untested.
 

@@ -18,6 +18,7 @@ const Visualizer = (() => {
   let playTimer = null;
   let playbackSpeed = 1;
   let varHistory = new Map(); // varName -> Array of numeric values
+  let recursiveFns = new Set(); // Functions that call themselves in the trace
   let loopAnalysis = []; // Detected loops in active code
   let flowModel = null; // Active SVG execution flow model
 
@@ -169,16 +170,33 @@ print(f"Target found at index: {idx}")
 
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+  const TRACEABLE = ['python', 'javascript', 'typescript', 'lua', 'shell', 'c', 'cpp', 'rust', 'go'];
+  const NONE_WORD = { python: 'None', javascript: 'null', typescript: 'null', lua: 'nil', shell: '', c: 'NULL', cpp: 'NULL', rust: 'None', go: 'nil' };
+  const langOf = () => currentTrace?.language || deps?.language?.() || 'python';
+  const isPy = () => langOf() === 'python';
+
+  function pointerLabel(p) {
+    if (!p) return '';
+    if (p.null) return 'NULL';
+    if (p.to) return p.i === undefined ? p.to : `${p.to}[${p.i}]`;
+    if (p.h) return `heap ${p.h.slice(-4)}`;
+    return '';
+  }
+
   function fmtVal(v) {
-    if (v === null || v === undefined) return 'None';
-    if (typeof v === 'boolean') return v ? 'True' : 'False';
+    if (v === null || v === undefined) return NONE_WORD[langOf()] ?? 'None';
+    if (typeof v === 'boolean') return isPy() ? (v ? 'True' : 'False') : String(v);
     if (typeof v === 'number') return String(v);
-    if (v.s !== undefined) return `'${v.s}'`;
+    if (v.p) return v.p.null ? 'NULL' : `→ ${pointerLabel(v.p)}`;
+    if (v.s !== undefined) return isPy() ? `'${v.s}'` : `"${v.s}"`;
     if (v.l) {
-      const [open, close] = v.k === 'tuple' ? ['(', ')'] : v.k === 'list' ? ['[', ']'] : ['{', '}'];
+      const [open, close] = v.k === 'tuple' ? ['(', ')'] : v.k === 'list' || v.k === 'array' || v.k === 'table' ? ['[', ']'] : ['{', '}'];
       return `${open}${v.l.map(fmtVal).join(', ')}${v.n > v.l.length ? ', …' : ''}${close}`;
     }
-    if (v.d) return `{${v.d.map(([k, x]) => `${k}: ${fmtVal(x)}`).join(', ')}${v.n > v.d.length ? ', …' : ''}}`;
+    if (v.d) {
+      const body = `{${v.d.map(([k, x]) => `${k}: ${fmtVal(x)}`).join(', ')}${v.n > v.d.length ? ', …' : ''}}`;
+      return v.k && !isPy() && v.k !== 'Object' ? `${v.k} ${body}` : body;
+    }
     return v.r ?? String(v);
   }
 
@@ -245,6 +263,8 @@ print(f"Target found at index: {idx}")
           <option value="4">4x</option>
         </select>
       </div>
+
+      <div id="vizNotice" class="viz-notice" hidden></div>
 
       <!-- Live Execution Stage -->
       <div id="vizActiveStage" style="display: none; flex-direction: column; gap: 12px; width: 100%;">
@@ -482,16 +502,19 @@ print(f"Target found at index: {idx}")
       });
 
       if (res.error) {
+        showNotice(res.error, res.stderr);
         if (!quiet) deps.toast?.(res.error);
         return;
       }
 
       if (res.trace && res.trace.steps && res.trace.steps.length > 0) {
-        loadTrace(res.trace, res.stderr, code);
-      } else if (!quiet) {
-        deps.toast?.('The code executed without recording trace steps.');
+        loadTrace(res.trace, res.stderr, code, res.exit_code);
+      } else {
+        showNotice(lastLine(res.stderr) || 'The code ran without recording any steps.', res.stderr);
+        if (!quiet) deps.toast?.('The code executed without recording trace steps.');
       }
     } catch (err) {
+      showNotice(`Tracing failed: ${err.message}`);
       if (!quiet) deps.toast?.(`Execution failed: ${err.message}`);
     } finally {
       tracing = false;
@@ -505,7 +528,10 @@ print(f"Target found at index: {idx}")
 
   function autoTrace() {
     if (!panelShown() || isInspecting() || tracing) return;
-    if ((deps.language?.() || 'python') !== 'python') return;
+    if (!TRACEABLE.includes(deps.language?.() || 'python')) {
+      showNotice(`The visualizer can't trace ${deps.language?.()} yet.`);
+      return;
+    }
     const code = deps.code?.() || '';
     if (code === tracedCode) return;
     triggerTrace(true);
@@ -517,16 +543,36 @@ print(f"Target found at index: {idx}")
     autoTimer = setTimeout(autoTrace, delay);
   }
 
-  function loadTrace(trace, stderr = '', codeOverride = null) {
+  function lastLine(text) {
+    const rows = String(text || '').split('\n').map((r) => r.trim()).filter(Boolean);
+    return rows.length ? rows[rows.length - 1] : '';
+  }
+
+  function showNotice(text, detail = '') {
     ensureStructure();
-    currentTrace = { ...trace, stderr };
+    const box = $('vizNotice');
+    if (!box) return;
+    if (!text) { box.hidden = true; box.textContent = ''; return; }
+    box.hidden = false;
+    box.title = String(detail || '').slice(-600);
+    box.textContent = text;
+  }
+
+  function loadTrace(trace, stderr = '', codeOverride = null, exitCode = 0) {
+    ensureStructure();
+    currentTrace = { ...trace, language: trace.language || deps?.language?.() || 'python', stderr };
     currentSteps = trace.steps || [];
     currentIdx = 0;
     varHistory.clear();
+    lastMem = null;
+    recursiveFns = new Set((trace.events || []).filter((e) => e.e === 'call' && e.caller && e.caller.fn === e.fn).map((e) => e.fn));
+    const failed = trace.error || (exitCode ? lastLine(stderr) : '');
+    const cutNote = trace.cut ? `Trace stopped early (${trace.cut === 'time' ? 'time limit' : 'step limit'}); showing what ran.` : '';
+    showNotice(failed ? `Program stopped: ${failed}` : cutNote, stderr);
 
     const code = codeOverride || deps?.code?.() || '';
     tracedCode = code;
-    loopAnalysis = analyzeCodeLoops(code);
+    loopAnalysis = isPy() ? analyzeCodeLoops(code) : buildTraceLoops(currentSteps, code.split('\n')).map((l) => ({ type: l.kind, line: l.line, vars: l.vars, raw: l.text }));
 
     const emptyStage = $('vizEmptyStage');
     const activeStage = $('vizActiveStage');
@@ -1316,6 +1362,168 @@ print(f"Target found at index: {idx}")
     `;
   }
 
+  /* Memory view: arrays as cells, pointers as chips under the cell they point at, heap nodes as a chain */
+  let lastMem = null;
+
+  const isPtr = (v) => Boolean(v && typeof v === 'object' && v.p && v.s === undefined);
+  const hasPointers = (vars) => Object.values(vars || {}).some(isPtr);
+  const tagKey = (p) => (!p || p.null ? null : p.to ? (p.i === undefined ? p.to : `${p.to}#${p.i}`) : p.h ? `heap:${p.h}` : null);
+
+  function memNotes(vars, prevVars) {
+    const notes = [];
+    for (const [k, v] of Object.entries(vars)) {
+      const before = prevVars[k];
+      if (isPtr(v)) {
+        const now = v.p.null ? 'NULL' : pointerLabel(v.p);
+        if (isPtr(before)) {
+          const was = before.p.null ? 'NULL' : pointerLabel(before.p);
+          if (was !== now) notes.push(`${k} now points to ${now} (was ${was})`);
+        } else if (before === undefined) notes.push(`${k} points to ${now}`);
+      } else if (v && v.l && before && before.l) {
+        v.l.forEach((x, i) => { if (!same(x, before.l[i])) notes.push(`${k}[${i}] = ${fmtVal(x)}`); });
+      } else if (before !== undefined && typeof v !== 'object' && v !== before) {
+        notes.push(`${k} = ${fmtVal(v)}`);
+      }
+    }
+    return notes.slice(0, 3);
+  }
+
+  function heapOrder(vars, heap) {
+    const order = [];
+    const seen = new Set();
+    const visit = (addr) => {
+      if (!addr || seen.has(addr) || heap[addr] === undefined) return;
+      seen.add(addr);
+      order.push(addr);
+      for (const [, val] of heap[addr]?.d || []) if (isPtr(val) && val.p.h) visit(val.p.h);
+    };
+    Object.values(vars).filter(isPtr).forEach((v) => visit(v.p.h));
+    return order;
+  }
+
+  function derefOf(v, vars, heap) {
+    const p = v.p;
+    if (p.null) return '—';
+    if (p.to) {
+      const target = vars[p.to];
+      if (target && target.l) {
+        if (p.i === undefined || p.i < 0 || p.i >= target.l.length) return 'outside the array';
+        return fmtVal(target.l[p.i]);
+      }
+      return fmtVal(target);
+    }
+    if (p.h && heap[p.h] !== undefined) return fmtVal(heap[p.h]);
+    return '?';
+  }
+
+  function renderMemoryActiveBlock(mount, step, prev, idx, vars) {
+    const lines = (deps?.code?.() || '').split('\n');
+    const prevVars = prev && prev.fn === step.fn ? prev.vars || {} : {};
+    const heap = step.heap || {};
+    const prevHeap = prev?.heap || {};
+    const types = step.ty || {};
+    const ptrs = Object.entries(vars).filter(([, v]) => isPtr(v));
+
+    const tags = new Map();
+    ptrs.forEach(([name, v]) => {
+      const key = tagKey(v.p);
+      if (!key) return;
+      if (!tags.has(key)) tags.set(key, []);
+      tags.get(key).push(name);
+    });
+    const chips = (key) => (tags.get(key) || []).map((n) => `<span class="viz-mem-ptr" data-name="${escapeHtml(n)}">${escapeHtml(n)}</span>`).join('');
+
+    const arrays = Object.entries(vars).filter(([, v]) => v && v.l && !isPtr(v));
+    const arrayHtml = arrays.map(([name, v]) => {
+      const before = prevVars[name]?.l;
+      const cols = v.l.map((x, i) => {
+        const changed = before && !same(before[i], x);
+        return `<div class="viz-mem-col">
+          <div class="viz-mem-cell${changed ? ' flash' : ''}${tags.has(`${name}#${i}`) ? ' pointed' : ''}">${escapeHtml(fmtVal(x))}</div>
+          <div class="viz-mem-idx">${i}</div>
+          <div class="viz-mem-tags">${chips(`${name}#${i}`)}</div>
+        </div>`;
+      });
+      if (tags.has(`${name}#${v.l.length}`)) {
+        cols.push(`<div class="viz-mem-col"><div class="viz-mem-cell end">end</div><div class="viz-mem-idx">${v.l.length}</div><div class="viz-mem-tags">${chips(`${name}#${v.l.length}`)}</div></div>`);
+      }
+      const type = types[name] || (v.et ? `${v.et} [${v.n}]` : '');
+      return `<div class="viz-mem-block"><div class="viz-mem-label">${escapeHtml(name)}<small>${escapeHtml(type)}</small></div><div class="viz-mem-row" data-arr="${escapeHtml(name)}">${cols.join('')}</div></div>`;
+    }).join('');
+
+    const targeted = [...new Set(ptrs.map(([, v]) => v.p.to).filter((n) => n && vars[n] && !vars[n].l))];
+    const scalarHtml = targeted.map((name) => `
+      <div class="viz-mem-block small"><div class="viz-mem-label">${escapeHtml(name)}<small>${escapeHtml(types[name] || '')}</small></div>
+        <div class="viz-mem-row"><div class="viz-mem-col">
+          <div class="viz-mem-cell pointed${prevVars[name] !== undefined && !same(prevVars[name], vars[name]) ? ' flash' : ''}">${escapeHtml(fmtVal(vars[name]))}</div>
+          <div class="viz-mem-tags">${chips(name)}</div>
+        </div></div></div>`).join('');
+
+    const order = heapOrder(vars, heap);
+    const nodeHtml = order.map((addr, n) => {
+      const obj = heap[addr];
+      const fields = obj && obj.d ? obj.d : [['value', obj]];
+      const nextField = fields.find(([, val]) => isPtr(val));
+      let wire = '';
+      if (nextField) {
+        const target = nextField[1];
+        const following = order[n + 1];
+        wire = target.p.null ? '<div class="viz-mem-wire stop">⊘</div>' : target.p.h === following ? '<div class="viz-mem-wire">➔</div>' : `<div class="viz-mem-wire far">→ ${escapeHtml(target.p.h.slice(-4))}</div>`;
+      }
+      const body = fields.map(([k, val]) => (isPtr(val)
+        ? `<div class="viz-mem-field"><span>${escapeHtml(k)}</span><i class="dot"></i></div>`
+        : `<div class="viz-mem-field"><span>${escapeHtml(k)}</span><b>${escapeHtml(fmtVal(val))}</b></div>`)).join('');
+      const fresh = prevHeap[addr] === undefined || !same(prevHeap[addr], obj);
+      return `<div class="viz-mem-node${fresh ? ' fresh' : ''}">
+        <div class="viz-mem-tags top">${chips(`heap:${addr}`)}</div>
+        <div class="viz-mem-node-box">${body}</div>
+        <div class="viz-mem-node-lbl">${escapeHtml(obj && obj.k ? obj.k.replace(/^struct /, '') : 'heap')} ${escapeHtml(addr.slice(-4))}</div>
+      </div>${wire}`;
+    }).join('');
+
+    const notes = memNotes(vars, prevVars);
+    const status = notes.length ? notes.join('  ·  ') : (lines[step.line - 1] || '').trim();
+    const rows = ptrs.map(([name, v]) => {
+      const out = !v.p.null && v.p.to && vars[v.p.to]?.l && (v.p.i < 0 || v.p.i > vars[v.p.to].l.length);
+      return `<tr class="${out ? 'bad' : ''}"><td class="var-key">${escapeHtml(name)}<small>${escapeHtml(types[name] || v.t || '')}</small></td><td class="var-val">${escapeHtml(fmtVal(v))}</td><td class="var-val deref">${escapeHtml(`*${name} = ${derefOf(v, vars, heap)}`)}</td></tr>`;
+    }).join('');
+
+    mount.innerHTML = `
+      <div class="viz-ptr-container viz-mem">
+        <div class="viz-ptr-status-box">line ${step.line}: <span class="viz-mem-note">${escapeHtml(status)}</span></div>
+        <div class="viz-dotted-divider"></div>
+        ${arrayHtml}${scalarHtml}
+        ${nodeHtml ? `<div class="viz-mem-heap"><div class="viz-mem-label">heap</div><div class="viz-mem-chain">${nodeHtml}</div></div>` : ''}
+        ${rows ? `<table class="viz-var-table viz-mem-ptrs" style="margin-top: 14px;"><tr class="head"><td>pointer</td><td>points to</td><td>value there</td></tr>${rows}</table>` : ''}
+        <table class="viz-var-table" style="margin-top: 10px;">${renderVarRows(Object.fromEntries(Object.entries(vars).filter(([, v]) => !isPtr(v))))}</table>
+      </div>
+    `;
+    animateMemory(mount, ptrs);
+  }
+
+  function animateMemory(mount, ptrs) {
+    const cols = mount.querySelectorAll('.viz-mem-row .viz-mem-col');
+    const pitch = cols.length > 1 ? cols[1].getBoundingClientRect().left - cols[0].getBoundingClientRect().left : 0;
+    const now = {};
+    for (const [name, v] of ptrs) now[name] = tagKey(v.p) || 'null';
+    mount.querySelectorAll('.viz-mem-ptr').forEach((chip) => {
+      const was = lastMem?.[chip.dataset.name];
+      const is = now[chip.dataset.name];
+      if (lastMem && was === undefined) {
+        chip.animate([{ opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' }], { duration: 320 });
+      } else if (was !== undefined && was !== is) {
+        const [a, ai] = was.split('#');
+        const [b, bi] = is.split('#');
+        if (a === b && ai !== undefined && bi !== undefined && pitch) {
+          chip.animate([{ transform: `translateX(${(Number(ai) - Number(bi)) * pitch}px)` }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.3,.7,.3,1)' });
+        } else {
+          chip.animate([{ opacity: 0.15 }, { opacity: 1 }], { duration: 360 });
+        }
+      }
+    });
+    lastMem = now;
+  }
+
   function callsItself(lines, fn) {
     const start = lines.findIndex((l) => new RegExp(`^\\s*def\\s+${fn}\\s*\\(`).test(l));
     if (start < 0) return false;
@@ -1339,7 +1547,13 @@ print(f"Target found at index: {idx}")
     const isModule = step.fn === '<module>';
     const funcName = step.fn || (flowModel ? flowModel.funcName : 'main');
 
-    if (!isModule && callsItself(lines, step.fn)) {
+    if (hasPointers(vars, step)) {
+      markKind(mount, 'memory');
+      renderMemoryActiveBlock(mount, step, prev, idx, vars);
+      return;
+    }
+
+    if (!isModule && (recursiveFns.has(step.fn) || (isPy() && callsItself(lines, step.fn)))) {
       markKind(mount, 'recursion');
       renderRecursionActiveBlock(mount, step, prev, idx, funcName, vars);
       return;
@@ -1420,8 +1634,48 @@ print(f"Target found at index: {idx}")
     return line.match(/^\s*/)[0].length;
   }
 
+  function loopVarsFromText(text) {
+    const t = text.trim();
+    let m = /\bfor\s*\(\s*(?:(?:let|const|var|int|long|short|size_t|unsigned|auto|char|float|double)\s+)*([A-Za-z_]\w*)\s*(?:=|of\b|in\b|:)/.exec(t);
+    if (m) return [m[1]];
+    m = /\bfor\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*(?::=|=|in\b)/.exec(t);
+    if (m) return m[1].split(',').map((v) => v.trim()).filter((v) => v !== '_');
+    m = /\bfor\s+\(?\s*([A-Za-z_]\w*)/.exec(t);
+    return m ? [m[1]] : [];
+  }
+
+  /* Loops found from the trace itself: a header is a line the same frame jumps back to. */
+  function buildTraceLoops(steps, lines) {
+    const found = new Map();
+    for (let i = 1; i < steps.length; i++) {
+      const a = steps[i - 1];
+      const b = steps[i];
+      if (a.fn !== b.fn || a.d !== b.d || b.line > a.line) continue;
+      const header = b.line;
+      const text = (lines[header - 1] || '').trim();
+      if (!/\b(for|while|until|loop|repeat)\b/.test(text)) continue;
+      if (b.line === a.line && !/^(for|while|until|loop|repeat)\b|^\}?\s*(while|until)\b/.test(text)) continue;
+      let prevVisit = -1;
+      for (let k = i - 2; k >= 0; k--) {
+        if (steps[k].d < b.d) break;
+        if (steps[k].d === b.d && steps[k].fn === b.fn && steps[k].line === header) { prevVisit = k; break; }
+      }
+      let end = Math.max(a.line, header);
+      if (prevVisit >= 0) {
+        for (let k = prevVisit; k < i; k++) if (steps[k].d === b.d && steps[k].fn === b.fn) end = Math.max(end, steps[k].line);
+      }
+      const key = `${b.fn}|${header}`;
+      const kind = /^(?:\}\s*)?for\b|\bfor\b/.test(text) && !/\bwhile\b/.test(text.split('for')[0]) ? 'for' : 'while';
+      const prev = found.get(key);
+      if (prev) prev.end = Math.max(prev.end, end);
+      else found.set(key, { line: header, end, fn: b.fn, kind, vars: kind === 'for' ? loopVarsFromText(text) : [], text: text.replace(/\s*[{:]\s*$/, '').slice(0, 80) });
+    }
+    return [...found.values()].sort((x, y) => x.line - y.line);
+  }
+
   function buildLoopTable(code) {
     const lines = (code || '').split('\n');
+    if (!isPy()) return buildTraceLoops(currentSteps, lines);
     const table = [];
     lines.forEach((text, i) => {
       const m = /^(\s*)(for|while)\b(.*):\s*(#.*)?$/.exec(text);
@@ -2084,6 +2338,8 @@ print(f"Target found at index: {idx}")
     currentSteps = [];
     currentIdx = 0;
     tracedCode = null;
+    lastMem = null;
+    recursiveFns = new Set();
     varHistory.clear();
     flowModel = null;
 
@@ -2118,6 +2374,7 @@ print(f"Target found at index: {idx}")
     render,
     clear,
     triggerTrace,
+    loadTrace,
     loadSample,
     isOpen,
     isInspecting,

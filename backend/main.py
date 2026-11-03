@@ -104,6 +104,12 @@ async def not_found(_request: Request, exc: LookupError):
     return JSONResponse({"detail": str(exc) or "Not found"}, status_code=404)
 
 
+@app.exception_handler(Exception)
+async def server_error(_request: Request, exc: Exception):
+    detail = f"{type(exc).__name__}: {exc}" if os.environ.get("EIDE_DEBUG") == "1" else "Internal Server Error"
+    return JSONResponse({"detail": detail}, status_code=500)
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "storage": "postgres" if db.IS_PG else "sqlite", "private_workspaces": MULTIUSER}

@@ -483,7 +483,11 @@ async function openSession(id, { push = true } = {}) {
     session = await api('GET', `/api/sessions/${encodeURIComponent(id)}`);
   } catch (err) {
     toast(`Couldn't open session: ${err.message}`);
-    if (!push) newFile({ push: false });
+    if (!push) {
+      const all = await api('GET', '/api/sessions').catch(() => null);
+      if (all && !all.length) await showEmpty();
+      else await newFile({ push: false });
+    }
     return;
   }
   const leaving = currentTab();

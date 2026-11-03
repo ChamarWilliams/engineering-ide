@@ -1,8 +1,8 @@
 run = "python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
-modules = ["python-3.12"]
+modules = ["nodejs-20", "python-3.12", "web"]
 
 [nix]
-channel = "stable-24_05"
+channel = "stable-25_05"
 packages = ["gcc", "lua5_4"]
 
 [deployment]

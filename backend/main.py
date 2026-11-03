@@ -322,8 +322,8 @@ def create_project(body: ProjectIn):
         raise HTTPException(404, "Unknown project type")
     if folder in db.list_folders() or db.folder_in_use(folder):
         raise HTTPException(409, f"A folder called {folder} already exists")
-    db.add_folder(folder)
     made, _, first, ids = _store(folder, files)
+    db.add_folder(folder)
     entry = next((ids[p] for name in ENTRY_FILES for p in ids if p == name), first)
     try:
         _write_workspace(folder, files)

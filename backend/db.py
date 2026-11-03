@@ -136,10 +136,10 @@ def upsert_session(session_id, title, language, code, layout=None, folder=None):
     if taken and taken[0]["owner"] != _me():
         raise LookupError("No such file")
     row = _execute(
-        "INSERT INTO sessions (id, title, language, code, layout, folder, owner) VALUES (?, ?, ?, ?, ?, COALESCE(?, ''), ?) "
+        "INSERT INTO sessions (id, title, language, code, layout, folder, owner) VALUES (?, ?, ?, ?, ?, COALESCE(CAST(? AS TEXT), ''), ?) "
         "ON CONFLICT (id) DO UPDATE SET title = excluded.title, language = excluded.language, "
         "code = excluded.code, layout = COALESCE(excluded.layout, sessions.layout), "
-        "folder = CASE WHEN ? IS NULL THEN sessions.folder ELSE excluded.folder END, "
+        "folder = CASE WHEN CAST(? AS TEXT) IS NULL THEN sessions.folder ELSE excluded.folder END, "
         "updated_at = CURRENT_TIMESTAMP "
         "RETURNING id, title, language, created_at, updated_at",
         (session_id, title, language, code, layout, folder, _me(), folder),

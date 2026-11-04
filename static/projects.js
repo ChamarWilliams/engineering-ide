@@ -4,7 +4,7 @@ const Projects = (() => {
     n.append(...kids.flat());
     return n;
   };
-  const MAX_FILE = 1024 * 1024;
+  const MAX_FILE = 200000;
   const MAX_FILES = 1500;
   const SKIP = new Set(['.git', 'node_modules', '__pycache__', '.venv', 'venv', 'target', 'build', 'dist', '.idea', '.vscode']);
   let deps = null;
@@ -104,7 +104,7 @@ const Projects = (() => {
     const parts = item.path.split('/');
     const name = parts[parts.length - 1];
     const dot = name.lastIndexOf('.');
-    return item.size <= MAX_FILE && !parts.some((p) => SKIP.has(p)) && deps.extToLang(dot > 0 ? name.slice(dot + 1).toLowerCase() : '');
+    return item.size <= MAX_FILE && item.path.length <= 300 && !parts.some((p) => SKIP.has(p)) && deps.extToLang(dot > 0 ? name.slice(dot + 1).toLowerCase() : '');
   }
 
   async function upload(items, folder) {
@@ -123,7 +123,7 @@ const Projects = (() => {
       failed = err.message;
     }
     if (failed) deps.toast(`Import stopped after ${imported} of ${list.length} files: ${failed}`);
-    else if (!list.length) deps.toast(`Nothing imported. All ${items.length} files are binary, over 1 MB or an unsupported type`);
+    else if (!list.length) deps.toast(`Nothing imported. All ${items.length} files are binary, over 200 KB or an unsupported type`);
     else if (!imported) deps.toast(`The server skipped all ${list.length} files. Their type isn't supported or they are too large`);
     else deps.toast(`Imported ${imported} of ${items.length} ${items.length === 1 ? 'file' : 'files'}${folder ? ` into ${folder}` : ''}${items.length > imported ? '. Binary, large and unsupported files were skipped' : ''}`);
     await deps.refresh();

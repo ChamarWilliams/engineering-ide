@@ -138,3 +138,21 @@ body.dropping-files::after { content: "Drop to import files, folders or a zip"; 
 .dev-row { display: flex; gap: 8px; }
 .dev-qr { align-self: center; padding: 10px; background: #ffffff; border-radius: var(--radius); line-height: 0; }
 .dev-qr[hidden] { display: none; }
+.pipe { padding: 4px 12px; flex: none; }
+.pipe-bar { flex-wrap: nowrap; margin-bottom: 0; min-height: 30px; }
+.pipe-title, .pipe-total { flex: none; }
+.pipe-total { margin-right: 0; }
+.pipe-chips { display: flex; align-items: center; gap: 4px; flex: none; }
+.pipe-chip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border: 1px solid var(--line); border-radius: 11px; background: none; color: var(--text-2); font: inherit; font-size: 11px; cursor: pointer; transition: opacity 0.25s, border-color 0.25s, background 0.25s; }
+.pipe-chip:not(:last-child)::after { content: ">"; margin-left: 4px; margin-right: -8px; color: var(--text-faint); position: relative; left: 8px; }
+.pipe-chip:hover { background: var(--hover); }
+.pipe-chip.pipe-fail { border-color: var(--err); }
+.pipe-chip.pipe-warn, .pipe-chip.pipe-fallback { border-color: #d9a441; }
+.pipe-chip .pipe-dot { width: 7px; height: 7px; }
+.pipe-chip .pipe-ms { margin-left: 0; font-size: 11px; }
+.pipe-playing .pipe-chip.pipe-pending { opacity: 0.35; }
+.pipe-chip.pipe-on { background: var(--hover); border-color: var(--accent); }
+.pipe-caption { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 11px; }
+.pipe-list { display: none; margin-top: 6px; padding-bottom: 4px; max-height: 38vh; overflow-y: auto; }
+.pipe.pipe-open .pipe-list { display: flex; }
+@media (max-width: 640px) { .pipe-bar { flex-wrap: wrap; row-gap: 4px; padding: 4px 0; } .pipe-chips { order: 5; flex: 1 1 100%; overflow-x: auto; } .pipe-caption { flex-basis: 100%; order: 6; white-space: normal; } }

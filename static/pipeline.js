@@ -101,6 +101,10 @@ const Pipeline = (() => {
     return stages;
   }
 
+  const OPEN_KEY = 'eide.pipeline.open';
+  const savedOpen = () => { try { return localStorage.getItem(OPEN_KEY) === '1'; } catch { return false; } };
+  const saveOpen = (open) => { try { localStorage.setItem(OPEN_KEY, open ? '1' : '0'); } catch { /* storage unavailable */ } };
+
   function card(stage, index) {
     const dot = make('span', { className: 'pipe-dot' });
     const title = make('strong', { textContent: TITLES[stage.id] });
@@ -112,11 +116,29 @@ const Pipeline = (() => {
     return body;
   }
 
+  function chip(stage) {
+    const time = stage.state === 'skip' || stage.ms == null ? '' : ms(stage.ms);
+    const body = make('button', { type: 'button', className: `pipe-chip pipe-${stage.state}`, title: `${stage.detail}${stage.recovery ? `. ${stage.recovery}` : ''}` }, make('span', { className: 'pipe-dot' }), make('strong', { textContent: TITLES[stage.id] }), make('span', { className: 'pipe-ms', textContent: time }));
+    body.addEventListener('click', () => setOpen(true));
+    return body;
+  }
+
+  function setOpen(open) {
+    host.classList.toggle('pipe-open', open);
+    const toggle = host.querySelector('.pipe-toggle');
+    if (toggle) toggle.textContent = open ? 'Hide details' : 'Details';
+    saveOpen(open);
+  }
+
+  const marks = () => [...host.querySelectorAll('.pipe-card, .pipe-chip')];
+
   function stop() {
     clearTimeout(timer);
     timer = null;
     host?.classList.remove('pipe-playing');
-    host?.querySelectorAll('.pipe-card').forEach((c) => c.classList.remove('pipe-on', 'pipe-pending'));
+    marks().forEach((c) => c.classList.remove('pipe-on', 'pipe-pending'));
+    const caption = host?.querySelector('.pipe-caption');
+    if (caption && last) caption.textContent = last.summary;
     if (last) host?.querySelector('.pipe-replay')?.replaceChildren('Replay');
   }
 
@@ -124,17 +146,21 @@ const Pipeline = (() => {
     if (!last || !host) return;
     if (timer) { stop(); return; }
     const cards = [...host.querySelectorAll('.pipe-card')];
-    const button = host.querySelector('.pipe-replay');
-    button.replaceChildren('Stop');
+    const chips = [...host.querySelectorAll('.pipe-chip')];
+    const caption = host.querySelector('.pipe-caption');
+    host.querySelector('.pipe-replay').replaceChildren('Stop');
     host.classList.add('pipe-playing');
-    cards.forEach((c) => c.classList.add('pipe-pending'));
+    marks().forEach((c) => c.classList.add('pipe-pending'));
     let i = 0;
     const hold = slow ? 1800 : 900;
     const step = () => {
       if (i >= cards.length) { stop(); return; }
-      cards.forEach((c) => c.classList.remove('pipe-on'));
-      cards[i].classList.remove('pipe-pending');
-      cards[i].classList.add('pipe-on');
+      marks().forEach((c) => c.classList.remove('pipe-on'));
+      for (const node of [cards[i], chips[i]]) {
+        node.classList.remove('pipe-pending');
+        node.classList.add('pipe-on');
+      }
+      caption.textContent = last.stages[i].detail;
       cards[i].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
       i++;
       timer = setTimeout(step, hold);
@@ -145,13 +171,21 @@ const Pipeline = (() => {
   function paint(stages, info) {
     stop();
     const total = (info.result?.duration_ms ?? 0) + (stages.find((s) => s.id === 'send')?.ms ?? 0) + (info.drawMs ?? 0);
+    const problem = stages.find((s) => s.state === 'fail') ?? stages.find((s) => s.state === 'warn' || s.state === 'fallback');
+    info.summary = problem ? problem.detail : '';
     const replayBtn = make('button', { type: 'button', className: 'pipe-btn pipe-replay', textContent: 'Replay', title: 'Play the last run back one step at a time' });
+    const toggle = make('button', { type: 'button', className: 'pipe-btn pipe-toggle', textContent: 'Details' });
     const slowBtn = make('label', { className: 'pipe-slow', title: 'Slower replay' }, make('input', { type: 'checkbox', checked: slow }), 'Slow');
     slowBtn.querySelector('input').addEventListener('change', (e) => { slow = e.target.checked; });
     replayBtn.addEventListener('click', replay);
+    toggle.addEventListener('click', () => setOpen(!host.classList.contains('pipe-open')));
+    const chips = make('div', { className: 'pipe-chips', role: 'list', ariaLabel: 'Steps of the last run' }, stages.map(chip));
+    const caption = make('span', { className: 'pipe-caption', textContent: info.summary, ariaLive: 'polite' });
     const list = make('div', { className: 'pipe-list', role: 'list', ariaLabel: 'What happened in the last run' }, stages.map(card));
-    host.replaceChildren(make('div', { className: 'pipe-bar' }, make('span', { className: 'pipe-title', textContent: 'Last run' }), make('span', { className: 'pipe-total', textContent: `${ms(total)} in total` }), slowBtn, replayBtn), list);
+    const bar = make('div', { className: 'pipe-bar' }, make('span', { className: 'pipe-title', textContent: 'Last run' }), make('span', { className: 'pipe-total', textContent: ms(total) }), chips, caption, slowBtn, replayBtn, toggle);
+    host.replaceChildren(bar, list);
     host.hidden = false;
+    setOpen(savedOpen());
   }
 
   function report(info) {

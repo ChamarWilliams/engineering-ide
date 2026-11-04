@@ -1097,6 +1097,12 @@ async function newFileDialog(folder = state.folder) {
   const picked = await NewFile.open({ types: LANGS, folder });
   if (!picked) return;
   if (picked.kind === 'project') { await Projects.open(); return; }
+  if (picked.kind === 'upload') {
+    if (picked.what === 'files') Projects.importFiles(folder);
+    else if (picked.what === 'folder') Projects.importFolder();
+    else Projects.importZip();
+    return;
+  }
   if (picked.kind === 'folder') {
     try { await api('POST', '/api/folders', { path: folder ? `${folder}/${picked.name}` : picked.name }); } catch (err) { toast(err.message); return; }
     await refreshTree();

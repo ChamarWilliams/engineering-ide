@@ -12,7 +12,7 @@ const NewFile = (() => {
     return Object.keys(types).find((k) => types[k].exts.includes(ext)) ?? null;
   }
 
-  // Resolves to { name, type }, { kind: 'folder', name }, { kind: 'project' } or null when cancelled.
+  // Resolves to { name, type }, { kind: 'folder', name }, { kind: 'project' }, { kind: 'upload', what } or null when cancelled.
   function open({ types, folder = '' }) {
     return new Promise((resolve) => {
       let step = 'type';
@@ -30,6 +30,9 @@ const NewFile = (() => {
       const entries = [
         { kind: 'folder', group: 'General', label: 'Folder', badge: '/', color: '#7a7f87' },
         { kind: 'project', group: 'General', label: 'Project…', badge: '+', color: '#7a7f87' },
+        { kind: 'upload', what: 'files', group: 'Upload', label: 'Upload files…', badge: '↑', color: '#5b8def' },
+        { kind: 'upload', what: 'folder', group: 'Upload', label: 'Upload folder…', badge: '↑', color: '#5b8def' },
+        { kind: 'upload', what: 'zip', group: 'Upload', label: 'Upload zip…', ext: '.zip', badge: '↑', color: '#5b8def' },
         ...Object.entries(types).map(([key, t]) => ({ kind: 'file', key, group: t.group, label: t.label, ext: `.${t.ext}`, badge: t.badge, color: t.color })),
       ];
 
@@ -46,6 +49,7 @@ const NewFile = (() => {
 
       function choose(entry) {
         if (entry.kind === 'project') { finish({ kind: 'project' }); return; }
+        if (entry.kind === 'upload') { finish({ kind: 'upload', what: entry.what }); return; }
         if (entry.kind === 'quick') { finish({ name: entry.base, type: entry.key }); return; }
         picked = entry;
         step = 'name';

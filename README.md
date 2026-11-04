@@ -1,6 +1,63 @@
-# Loopline
+# Loopline: Browser IDE with a Step-by-Step Code Visualizer
 
-A browser IDE for C, C++, Lua and Python with a visualizer, a Python timeline tracer, themes, switchable and floating layouts, version history, GitHub export, formatters and linters, and a runner agent that executes code on your own computer.
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Monaco](https://img.shields.io/badge/Monaco_Editor-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+A browser IDE that runs your code and then replays it one line at a time. Variables, call stacks, loops, pointers and heap objects are drawn as the program executes, for Python, JavaScript, TypeScript, Lua, shell, Java, C, C++, Rust and Go.
+
+---
+
+## Architecture Overview
+
+```text
+        +-------------------------------------------+
+        |  Browser: Monaco editor, Flow / Map / Text |
+        |  views, Visualizer panel, terminal         |
+        +---------------------+---------------------+
+                              |
+                              | JSON / REST + WebSocket
+                              v
+        +-------------------------------------------+
+        |  FastAPI backend: runner, tracers, history |
+        +----------+------------------+-------------+
+                   |                  |
+                   v                  v
+        +----------------+   +-----------------------+
+        | SQLite / Postgres |   | Tracers (per language) |
+        | files, history    |   | trace.js, trace.lua,   |
+        +----------------+   | trace.sh, gdb, JDI,    |
+                              | sys.settrace           |
+                              +-----------------------+
+```
+
+Every tracer writes the same language-neutral trace (steps, call and return events, variables, heap objects, stdout), so one Visualizer renders all ten languages.
+
+---
+
+## Core Engineering Problem Solved
+
+Debuggers show state, but they make you drive. Loopline records one full run in a sandbox and replays it, so you can scrub forwards and backwards through it.
+
+* **One trace format:** `sys.settrace` for Python, the inspector protocol for Node, hooks for Lua, `trap DEBUG` for shell, JDI for Java and gdb for C, C++, Rust and Go all produce the same step and event shape.
+* **Memory view:** programs with pointers or objects show array cells, pointer chips that move when reassigned, and heap nodes with their links.
+* **Bounded runs:** traces stop at 1500 steps or the time limit and say so, and compile errors and crashes show a notice instead of failing silently.
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | Python 3.12, FastAPI | Run and trace API, version history, GitHub export |
+| **Frontend** | Vanilla JavaScript, Monaco | Editor, Flow and Map views, Visualizer |
+| **Storage** | SQLite, or Postgres via `DATABASE_URL` | Files and history per visitor |
+| **Tracing** | gdb, JDK (JDI), Node inspector, Lua debug hooks | Step-level execution capture |
+| **Runner agent** | Python, WebSocket, optional Docker | Runs code on your own computer |
 
 ## About this project
 
@@ -8,9 +65,11 @@ Loopline was built with AI-assisted development (Claude Code) as my entry for a 
 
 Released under the [MIT License](LICENSE): use it, change it, and build on it freely, keeping the copyright notice.
 
-## Run it
+## Quickstart
 
 ```bash
+git clone https://github.com/ChamarWilliams/engineering-ide.git
+cd engineering-ide
 python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt      # Linux and macOS: .venv/bin/pip
 .venv/Scripts/pip install -r requirements-libs.txt # optional: numpy, pandas, matplotlib, cloud SDKs

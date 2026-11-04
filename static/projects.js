@@ -111,6 +111,7 @@ const Projects = (() => {
     const list = items.filter(wanted).slice(0, MAX_FILES);
     let imported = 0;
     let first = null;
+    let failed = null;
     try {
       for (let i = 0; i < list.length; i += 40) {
         const batch = await Promise.all(list.slice(i, i + 40).map(async (it) => ({ path: it.path, content: (await it.read()).replace(/\r\n/g, '\n') })));
@@ -119,9 +120,11 @@ const Projects = (() => {
         first ??= res.open;
       }
     } catch (err) {
-      deps.toast(`Import stopped: ${err.message}`);
+      failed = err.message;
     }
-    if (!imported) deps.toast('Nothing imported. Those files are binary, too large or an unsupported type');
+    if (failed) deps.toast(`Import stopped after ${imported} of ${list.length} files: ${failed}`);
+    else if (!list.length) deps.toast(`Nothing imported. All ${items.length} files are binary, over 1 MB or an unsupported type`);
+    else if (!imported) deps.toast(`The server skipped all ${list.length} files. Their type isn't supported or they are too large`);
     else deps.toast(`Imported ${imported} of ${items.length} ${items.length === 1 ? 'file' : 'files'}${folder ? ` into ${folder}` : ''}${items.length > imported ? '. Binary, large and unsupported files were skipped' : ''}`);
     await deps.refresh();
     if (first) deps.openSession(first);

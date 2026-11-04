@@ -117,7 +117,7 @@ How it is protected:
 - Replit's sandbox has no outbound network, so cloud SDK code only reaches a cloud through your own agent.
 - Memory limits on the server runner use POSIX rlimits and are not enforced on Windows.
 - Importing every bundled library at once can exceed the five-second run limit.
-- Tracing C, C++, Rust and Go needs gdb on the server; Java needs a JDK. Single-line infinite loops stop gdb stepping and return a partial trace.
+- Tracing C, C++, Rust and Go needs gdb on the server; Java needs a JDK. Go traces stop early with gdb on Windows. Single-line infinite loops stop gdb stepping and return a partial trace.
 - StyLua is not on PyPI. Install it separately and put it on PATH to format Lua.
 - Docker mode was tested for Python only (python:3.12-slim). The C, C++ and Lua images and the data-science image are untested.
 

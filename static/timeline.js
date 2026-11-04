@@ -89,7 +89,7 @@ const Timeline = (() => {
       trace = { ...r.trace, stderr: r.stderr };
       ui.scrub.max = last();
       for (const b of [ui.scrub, ui.play]) b.disabled = false;
-      if (trace.cut) deps.toast(`Trace stopped after ${trace.steps.length} steps (${trace.cut === 'time' ? 'time' : 'step'} limit).`);
+      if (trace.cut) deps.toast(`Trace stopped after ${trace.steps.length} steps (${trace.cut === 'time' ? 'time limit' : trace.cut === 'stepping' ? 'debugger stopped' : 'step limit'}).`);
       Workspace.show('viz');
       go(0);
     } catch (err) {

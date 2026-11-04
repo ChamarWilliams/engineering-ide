@@ -930,6 +930,7 @@ function bindUi() {
   el.shareBtn.addEventListener('click', share);
   el.tabNew.addEventListener('click', () => newFileDialog());
   $('#welcomeNew').addEventListener('click', () => newFileDialog());
+  Examples.render($('#welcomeExamples'), openExample);
   $('#welcomeProject').addEventListener('click', () => Projects.open());
   $('#welcomeImport').addEventListener('click', () => Projects.importFolder());
   el.treeNewBtn.addEventListener('click', () => newFileDialog());
@@ -1086,6 +1087,15 @@ async function newFileDialog(folder = state.folder) {
   markDirty();
   renderChrome();
   if (currentView === 'map') setView(Prefs.get('openAs') === 'text' || !isFlowable(picked.type) ? 'text' : 'flow');
+}
+
+async function openExample(ex) {
+  await newFile({ language: ex.language });
+  setCode(ex.code);
+  state.title = ex.name;
+  markDirty();
+  renderChrome();
+  Workspace.show('viz', true);
 }
 
 async function newFileIn(folder) {

@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 import time
 
 import gdb
@@ -345,6 +346,7 @@ def alive():
 
 
 crash = []
+step_error = ""
 SIGNALS = {"SIGSEGV": "Segmentation fault (SIGSEGV)", "SIGFPE": "Arithmetic exception (SIGFPE)",
            "SIGABRT": "Aborted (SIGABRT)", "SIGILL": "Illegal instruction (SIGILL)", "SIGBUS": "Bus error (SIGBUS)"}
 
@@ -365,6 +367,8 @@ def finish(partial=False):
     except OSError:
         pass
     data = {"steps": steps, "events": events, "stdout": prog, "cut": cut or ("time" if partial else None)}
+    if step_error and cut == "stepping":
+        data["note"] = step_error[:160]
     if crash:
         data["error"] = crash[0]
     with open(".trace.json", "w", encoding="utf-8") as f:
@@ -374,10 +378,11 @@ def finish(partial=False):
 try:
     gdb.execute("tbreak " + os.environ.get("EIDE_BREAK", "main"))
     gdb.execute("run > .prog.out")
-    try:
-        gdb.execute("call (int)setvbuf(*(void**)&stdout, (void*)0, 2, 0)", to_string=True)
-    except gdb.error:
-        pass
+    if os.environ.get("EIDE_BREAK", "main") == "main":
+        try:
+            gdb.execute("call (int)setvbuf(*(void**)&stdout, (void*)0, 2, 0)", to_string=True)
+        except gdb.error:
+            pass
     while alive() and len(steps) < MAX_STEPS:
         frames = user_frames()
         if frames and not is_user(gdb.newest_frame()):
@@ -406,9 +411,17 @@ try:
         if time.perf_counter() - started > BUDGET:
             cut = "time"
             break
-        try:
-            gdb.execute("step", to_string=True)
-        except gdb.error:
+        moved = False
+        for motion in ("step", "next", "finish", "stepi"):
+            try:
+                gdb.execute(motion, to_string=True)
+                moved = True
+                break
+            except gdb.error as err:
+                step_error = str(err)
+        if not moved:
+            if alive():
+                cut = "stepping"
             break
         if crash:
             frames = user_frames()
@@ -420,6 +433,8 @@ try:
                     last["heap"] = heap_now
                 steps.append(last)
             break
+    if os.environ.get("EIDE_TRACE_DEBUG"):
+        sys.stderr.write(f"trace end: alive={alive()} steps={len(steps)} cut={cut} err={step_error}\n")
     if alive() and len(steps) >= MAX_STEPS:
         cut = "steps"
     while stack:

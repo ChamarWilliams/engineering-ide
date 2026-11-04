@@ -1135,7 +1135,7 @@ print(table.concat(data, " "))
       if (traced) {
         stats.clear();
         play = { ...prepare(traced), token, rawTrace: traced, mode: 'run' };
-        play.note = traced.cut ? `trace cut at ${traced.cut} limit` : '';
+        play.note = traced.cut ? `trace cut (${traced.cut === 'stepping' ? 'debugger stopped' : `${traced.cut} limit`})` : '';
       } else {
         const r = await deps.api('POST', '/api/run', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner(), id: deps.sessionId() });
         if (play?.token !== token) return false;

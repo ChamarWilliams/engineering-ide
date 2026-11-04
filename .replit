@@ -3,7 +3,7 @@ modules = ["nodejs-20", "python-3.12", "web", "postgresql-16"]
 
 [nix]
 channel = "stable-25_05"
-packages = ["gcc", "gdb", "lua5_4"]
+packages = ["gcc", "gdb", "jdk21", "lua5_4"]
 
 [deployment]
 deploymentTarget = "cloudrun"

@@ -373,6 +373,7 @@ steps = []
 events = []
 depth = [0]
 MAX_EVENTS = 4000
+MAX_HEAP = 24
 cut = [None]
 out_parts = []
 out_len = [0]
@@ -405,7 +406,36 @@ def enc(v, depth=0):
         return {"l": [enc(x, depth + 1) for x in list(v)[:MAX_ITEMS]], "n": len(v), "k": type(v).__name__}
     if depth < 2 and isinstance(v, dict):
         return {"d": [[repr(k)[:30], enc(x, depth + 1)] for k, x in list(v.items())[:MAX_ITEMS]], "n": len(v)}
+    if hasattr(v, "__dict__") and not isinstance(v, type) and type(v).__module__ == "__main__":
+        return ptr(v)
     return {"r": repr(v)[:60]}
+
+
+heap = {}
+queue = []
+
+
+def ptr(v):
+    key = "@%x" % id(v)
+    if key not in heap and len(heap) < MAX_HEAP:
+        heap[key] = None
+        queue.append((key, v))
+    return {"p": {"h": key}, "r": key, "t": type(v).__name__}
+
+
+def drain():
+    while queue:
+        key, obj = queue.pop(0)
+        items = list(vars(obj).items())[:MAX_ITEMS]
+        heap[key] = {"d": [[k, enc(x, 1)] for k, x in items], "n": len(items), "k": type(obj).__name__}
+
+
+def snap_heap(frame):
+    heap.clear()
+    queue.clear()
+    values = snap(frame)
+    drain()
+    return values, {k: v for k, v in heap.items() if v is not None}
 
 
 def kind(v):
@@ -439,7 +469,11 @@ def tracer(frame, event, arg):
         if time.perf_counter() > DEADLINE:
             cut[0] = "time"
             raise Stop
-        steps.append({"line": frame.f_lineno, "fn": frame.f_code.co_name, "d": depth[0], "vars": snap(frame), "out": out_len[0]})
+        values, objects = snap_heap(frame)
+        step = {"line": frame.f_lineno, "fn": frame.f_code.co_name, "d": depth[0], "vars": values, "out": out_len[0]}
+        if objects:
+            step["heap"] = objects
+        steps.append(step)
     elif event == "call":
         if len(events) < MAX_EVENTS:
             back = frame.f_back
@@ -528,7 +562,7 @@ def _trace_other(run_id, language, code, sandbox, result):
     started = time.perf_counter()
     try:
         with tempfile.TemporaryDirectory(prefix="eide-", ignore_cleanup_errors=True) as workdir:
-            files = {plan["source"]: code, **plan["files"]}
+            files = {plan["source"]: tracers.prepare_source(language, code), **plan["files"]}
             for name, text in files.items():
                 with open(os.path.join(workdir, name), "w", encoding="utf-8", newline="\n") as f:
                     f.write(text)

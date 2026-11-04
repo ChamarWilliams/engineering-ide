@@ -567,7 +567,8 @@ print(f"Target found at index: {idx}")
     lastMem = null;
     recursiveFns = new Set((trace.events || []).filter((e) => e.e === 'call' && e.caller && e.caller.fn === e.fn).map((e) => e.fn));
     const failed = trace.error || (exitCode ? lastLine(stderr) : '');
-    const cutNote = trace.cut ? `Trace stopped early (${trace.cut === 'time' ? 'time limit' : 'step limit'}); showing what ran.` : '';
+    const cutWhy = { time: 'time limit', steps: 'step limit', stepping: 'the debugger could not step further' }[trace.cut] || trace.cut;
+    const cutNote = trace.cut ? `Trace stopped early (${cutWhy}); showing what ran.` : '';
     showNotice(failed ? `Program stopped: ${failed}` : cutNote, stderr);
 
     const code = codeOverride || deps?.code?.() || '';

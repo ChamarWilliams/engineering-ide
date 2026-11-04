@@ -15,6 +15,28 @@ def _script(name):
     return (SCRIPTS / name).read_text(encoding="utf-8")
 
 
+def prepare_source(language, code):
+    """Source text to trace; Java's entry class is renamed Main so javac and the tracer agree."""
+    if language != "java":
+        return code
+    entry = re.search(r"static\s+void\s+main\s*\(", code)
+    if not entry:
+        return code
+    best = None
+    for m in re.finditer(r"\b(?:class|record|enum)\s+(\w+)[^{;]*\{", code):
+        depth, end = 0, None
+        for i in range(m.end() - 1, len(code)):
+            depth += (code[i] == "{") - (code[i] == "}")
+            if depth == 0:
+                end = i
+                break
+        if end is not None and m.start() < entry.start() < end and (best is None or end - m.start() < best[1]):
+            best = (m.group(1), end - m.start())
+    if not best or best[0] == "Main":
+        return code
+    return re.sub(rf"\b{re.escape(best[0])}\b", "Main", code)
+
+
 def _which(*names):
     for name in names:
         path = shutil.which(name)

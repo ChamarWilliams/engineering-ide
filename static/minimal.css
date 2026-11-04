@@ -94,6 +94,9 @@ body.running #runBtn { background: none; color: var(--green); }
 .nf-ext { margin-left: auto; font-family: var(--mono); }
 .nf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 4px; border-radius: 6px; background: var(--hover); color: var(--text-2); font-size: 12px; white-space: nowrap; }
 .welcome-actions { display: flex; gap: 8px; margin-top: 6px; }
+.welcome-sub { margin-top: 14px; font-size: 12px; }
+.welcome-examples { flex-wrap: wrap; justify-content: center; max-width: 560px; }
+.welcome-examples .mesh-btn { border: 1px solid var(--line-soft); }
 .pj { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 20px; min-height: 340px; }
 .pj-list { display: flex; flex-direction: column; max-height: 420px; padding-right: 8px; overflow: auto; border-right: 1px solid var(--line); }
 .pj-item { padding: 6px 10px; border: 0; border-radius: var(--radius-sm); background: none; color: var(--text-2); text-align: left; cursor: pointer; }

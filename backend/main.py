@@ -194,7 +194,7 @@ def _siblings(body):
         stem = re.sub(r"[^A-Za-z0-9_-]", "_", f["title"]).strip("_") or "file"
         funcs = [n for n in graph.analyze(body.language, f["code"])["nodes"] if n["kind"] == "function"]
         ext = ".c" if body.language == "c" else ".cpp"
-        if stem in ("main", "out") or stem + ".h" in taken or any(n["name"] == "main" for n in funcs):
+        if stem in ("main", "out") or stem + ".h" in taken or any(n["name"] == "main" for n in funcs) or re.search(r"\bmain\s*\(", f["code"]):
             continue
         if funcs:
             out.append((stem + ext, f["code"]))

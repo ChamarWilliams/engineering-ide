@@ -546,6 +546,8 @@ def _trace_other(run_id, language, code, sandbox, result):
                 result["trace"]["language"] = language
                 if step["timed_out"] and not result["trace"].get("cut"):
                     result["trace"]["cut"] = "time"
+            elif os.path.exists(os.path.join(workdir, ".trace.json")):
+                result["error"] = "The trace was too large to show. Try a shorter run."
             elif not result["stderr"].strip():
                 result["error"] = "The tracer produced no steps."
     finally:

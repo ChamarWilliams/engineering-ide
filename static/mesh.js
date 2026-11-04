@@ -191,6 +191,7 @@ print(table.concat(data, " "))
   };
   const short = (name) => name.split(/[.:]/).pop();
   const lang = () => deps.language();
+  const TRACEABLE = new Set(['python', 'javascript', 'typescript', 'lua', 'shell', 'c', 'cpp', 'rust', 'go', 'java']);
 
   function build() {
     const button = (cls, label, glyph, title) => make('button', { type: 'button', className: `mesh-btn ${cls}`, title }, glyph ? icon(glyph) : '', label);
@@ -1121,14 +1122,20 @@ print(table.concat(data, " "))
     const runId = deps.uid();
     play.runId = runId;
     try {
-      if (lang() === 'python') {
-        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: 'python', code: deps.code(), runner: deps.runner() });
+      let traced = null;
+      if (TRACEABLE.has(lang())) {
+        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner() });
         if (play?.token !== token) return false;
-        deps.output({ kind: 'trace', result: r });
-        if (!r.trace) { play = null; toastErr(r); syncControls(); return false; }
+        if (r.trace || lang() === 'python') {
+          deps.output({ kind: 'trace', result: r });
+          if (!r.trace) { play = null; toastErr(r); syncControls(); return false; }
+          traced = r.trace;
+        }
+      }
+      if (traced) {
         stats.clear();
-        play = { ...prepare(r.trace), token, rawTrace: r.trace, mode: 'run' };
-        play.note = r.trace.cut ? `trace cut at ${r.trace.cut} limit` : '';
+        play = { ...prepare(traced), token, rawTrace: traced, mode: 'run' };
+        play.note = traced.cut ? `trace cut at ${traced.cut} limit` : '';
       } else {
         const r = await deps.api('POST', '/api/run', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner(), id: deps.sessionId() });
         if (play?.token !== token) return false;

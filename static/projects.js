@@ -5,6 +5,7 @@ const Projects = (() => {
     return n;
   };
   const MAX_FILE = 1024 * 1024;
+  const MAX_FILES = 1500;
   const SKIP = new Set(['.git', 'node_modules', '__pycache__', '.venv', 'venv', 'target', 'build', 'dist', '.idea', '.vscode']);
   let deps = null;
   let templates = null;
@@ -94,37 +95,132 @@ const Projects = (() => {
     deps.toast(`Created ${result.folder}${result.files ? ` with ${result.files} files` : ''}`);
   }
 
-  function importFolder() {
-    const picker = make('input', { type: 'file', multiple: true });
-    picker.webkitdirectory = true;
-    picker.addEventListener('change', async () => {
-      const all = [...picker.files];
-      if (!all.length) return;
-      const root = all[0].webkitRelativePath.split('/')[0] || 'import';
-      const folder = uniqueName(safeName(root));
-      const wanted = all.filter((f) => {
-        const parts = f.webkitRelativePath.split('/').slice(1);
-        const dot = f.name.lastIndexOf('.');
-        return parts.length && !parts.some((p) => SKIP.has(p)) && f.size <= MAX_FILE && deps.extToLang(dot > 0 ? f.name.slice(dot + 1).toLowerCase() : '');
-      }).slice(0, 1500);
-      let imported = 0;
-      let first = null;
-      try {
-        for (let i = 0; i < wanted.length; i += 40) {
-          const batch = await Promise.all(wanted.slice(i, i + 40).map(async (f) => ({ path: f.webkitRelativePath.split('/').slice(1).join('/'), content: await f.text() })));
-          const res = await deps.api('POST', '/api/import', { folder, files: batch });
-          imported += res.imported;
-          first ??= res.open;
-        }
-      } catch (err) {
-        deps.toast(`Import stopped: ${err.message}`);
+  const isZip = (f) => /\.zip$/i.test(f.name);
+  const asFile = (f, path) => ({ path, size: f.size, read: () => f.text() });
+  const entryFile = (entry) => new Promise((ok, no) => entry.file(ok, no));
+  const readBatch = (reader) => new Promise((ok, no) => reader.readEntries(ok, no));
+
+  function wanted(item) {
+    const parts = item.path.split('/');
+    const name = parts[parts.length - 1];
+    const dot = name.lastIndexOf('.');
+    return item.size <= MAX_FILE && !parts.some((p) => SKIP.has(p)) && deps.extToLang(dot > 0 ? name.slice(dot + 1).toLowerCase() : '');
+  }
+
+  async function upload(items, folder) {
+    const list = items.filter(wanted).slice(0, MAX_FILES);
+    let imported = 0;
+    let first = null;
+    try {
+      for (let i = 0; i < list.length; i += 40) {
+        const batch = await Promise.all(list.slice(i, i + 40).map(async (it) => ({ path: it.path, content: (await it.read()).replace(/\r\n/g, '\n') })));
+        const res = await deps.api('POST', '/api/import', { folder, files: batch });
+        imported += res.imported;
+        first ??= res.open;
       }
-      deps.toast(`Imported ${imported} of ${all.length} files into ${folder}${all.length - imported ? '. Binary, large and unsupported files were skipped' : ''}`);
-      await deps.refresh();
-      if (first) deps.openSession(first);
-    });
+    } catch (err) {
+      deps.toast(`Import stopped: ${err.message}`);
+    }
+    if (!imported) deps.toast('Nothing imported. Those files are binary, too large or an unsupported type');
+    else deps.toast(`Imported ${imported} of ${items.length} ${items.length === 1 ? 'file' : 'files'}${folder ? ` into ${folder}` : ''}${items.length > imported ? '. Binary, large and unsupported files were skipped' : ''}`);
+    await deps.refresh();
+    if (first) deps.openSession(first);
+  }
+
+  // Items that all sit under one top-level folder go into a new folder of that name.
+  function uploadAsFolder(items, fallback) {
+    const roots = new Set(items.map((i) => i.path.split('/')[0]));
+    const single = roots.size === 1 && items.every((i) => i.path.includes('/'));
+    const name = uniqueName(safeName(single ? [...roots][0] : fallback));
+    return upload(single ? items.map((i) => ({ ...i, path: i.path.slice(i.path.indexOf('/') + 1) })) : items, name);
+  }
+
+  async function unzip(file) {
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const dv = new DataView(buf.buffer);
+    const text = new TextDecoder();
+    let end = buf.length - 22;
+    while (end >= 0 && dv.getUint32(end, true) !== 0x06054b50) end--;
+    if (end < 0) throw new Error('That is not a valid zip file');
+    const items = [];
+    let at = dv.getUint32(end + 16, true);
+    for (let i = dv.getUint16(end + 10, true); i > 0 && dv.getUint32(at, true) === 0x02014b50; i--) {
+      const method = dv.getUint16(at + 10, true);
+      const packed = dv.getUint32(at + 20, true);
+      const size = dv.getUint32(at + 24, true);
+      const nameLen = dv.getUint16(at + 28, true);
+      const next = at + 46 + nameLen + dv.getUint16(at + 30, true) + dv.getUint16(at + 32, true);
+      const local = dv.getUint32(at + 42, true);
+      const path = text.decode(buf.subarray(at + 46, at + 46 + nameLen)).replace(/\\/g, '/').replace(/^\/+/, '');
+      at = next;
+      if (path.endsWith('/') || path.includes('..') || path.startsWith('__MACOSX/') || (method !== 0 && method !== 8)) continue;
+      const from = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+      const raw = buf.subarray(from, from + packed);
+      const read = async () => text.decode(method === 0 ? raw : await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      items.push({ path, size, read });
+    }
+    return items;
+  }
+
+  async function importZip(file) {
+    try {
+      await uploadAsFolder(await unzip(file), file.name.replace(/\.zip$/i, ''));
+    } catch (err) {
+      deps.toast(err.message);
+    }
+  }
+
+  async function importLoose(files, folder) {
+    for (const f of files.filter(isZip)) await importZip(f);
+    const rest = files.filter((f) => !isZip(f));
+    if (rest.length) await upload(rest.map((f) => asFile(f, f.name)), folder);
+  }
+
+  function choose(props, onPick) {
+    const picker = make('input', { type: 'file', ...props });
+    picker.addEventListener('change', () => { if (picker.files.length) onPick([...picker.files]); });
     picker.click();
   }
 
-  return { init: (d) => { deps = d; }, open, importFolder };
+  const importFiles = (folder = '') => choose({ multiple: true }, (files) => importLoose(files, folder));
+  const importZipFile = () => choose({ accept: '.zip,application/zip' }, ([file]) => importZip(file));
+
+  function importFolder() {
+    choose({ multiple: true, webkitdirectory: true }, (all) => {
+      const items = all.map((f) => asFile(f, f.webkitRelativePath)).filter((i) => i.path);
+      uploadAsFolder(items, items[0].path.split('/')[0] || 'import');
+    });
+  }
+
+  async function walk(entry, prefix, out) {
+    if (entry.isFile) {
+      out.push(asFile(await entryFile(entry), prefix + entry.name));
+      return;
+    }
+    if (SKIP.has(entry.name) || out.length > MAX_FILES * 2) return;
+    const reader = entry.createReader();
+    for (let batch = await readBatch(reader); batch.length; batch = await readBatch(reader)) {
+      for (const child of batch) await walk(child, `${prefix}${entry.name}/`, out);
+    }
+  }
+
+  // The drop's entries expire after the event, so they are all collected before the first await.
+  async function dropped(transfer, folder = '') {
+    const entries = [...transfer.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
+    const files = [...transfer.files];
+    if (!entries.length) return importLoose(files, folder);
+    const loose = [];
+    for (const entry of entries) {
+      if (entry.isDirectory) {
+        const items = [];
+        await walk(entry, '', items);
+        await uploadAsFolder(items, entry.name);
+      } else {
+        loose.push(await entryFile(entry));
+      }
+    }
+    if (loose.length) await importLoose(loose, folder);
+  }
+
+  return { init: (d) => { deps = d; }, open, importFolder, importFiles, importZip: importZipFile, dropped };
 })();

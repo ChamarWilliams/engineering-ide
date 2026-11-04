@@ -112,3 +112,4 @@ Status: **Verified** means I exercised it in the browser or with a test. **Built
 - HTML preview, JSON/YAML validation and SQL execution.
 - Multi-file builds for the remote runner agent and Docker sandbox (they compile the single open file).
 - Hover type details on Flow wires for languages other than C and C++.
+- Import: Upload files, folder or zip from the sidebar, Map view, welcome screen and command palette, or drag them anywhere in the window

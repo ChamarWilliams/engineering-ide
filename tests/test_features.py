@@ -161,3 +161,16 @@ def test_python_tracer_uses_heap_for_instances(client):
     assert "p" in last["vars"]["a"] and last["vars"]["a"]["p"] == last["vars"]["b"]["p"]
     key = last["vars"]["a"]["p"]["h"]
     assert last["heap"][key]["d"][0] == ["x", 1]
+
+
+def test_import_endpoint_builds_folders(client):
+    files = [{"path": "src/util.py", "content": "def f():\n    return 1\n"}, {"path": "main.py", "content": "print(1)\n"}, {"path": "logo.png", "content": "x"}]
+    res = client.post("/api/import", json={"folder": "zz-imp", "files": files})
+    assert res.status_code == 201, res.text
+    assert res.json()["imported"] == 2
+    try:
+        tree = client.get("/api/tree").json()
+        assert {"zz-imp", "zz-imp/src"} <= set(tree["folders"])
+        assert {f["title"] for f in tree["files"] if f["folder"].startswith("zz-imp")} == {"util", "main"}
+    finally:
+        client.delete("/api/folders", params={"path": "zz-imp", "force": "true"})

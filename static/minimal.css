@@ -93,7 +93,7 @@ body.running #runBtn { background: none; color: var(--green); }
 .nf-pop .pal-list { max-height: 340px; }
 .nf-ext { margin-left: auto; font-family: var(--mono); }
 .nf-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 4px; border-radius: 6px; background: var(--hover); color: var(--text-2); font-size: 12px; white-space: nowrap; }
-.welcome-actions { display: flex; gap: 8px; margin-top: 6px; }
+.welcome-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
 .welcome-sub { margin-top: 14px; font-size: 12px; }
 .welcome-examples { flex-wrap: wrap; justify-content: center; max-width: 560px; }
 .welcome-examples .mesh-btn { border: 1px solid var(--line-soft); }
@@ -107,3 +107,5 @@ body.running #runBtn { background: none; color: var(--green); }
 .pj-label { color: var(--text-faint); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .pj-files { margin: 0; padding: 0; list-style: none; font: 12px/1.7 var(--mono); color: var(--text-2); }
 .pj-note { margin: auto 0 0; color: var(--text-faint); font-size: 12px; }
+body.dropping-files::after { content: "Drop to import files, folders or a zip"; position: fixed; inset: 8px; z-index: 900; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); font-size: 16px; pointer-events: none; }
+.tree-row.drop-folder { background: var(--hover); outline: 1px solid var(--accent); }

@@ -62,50 +62,29 @@ const Qol = (() => {
 
   // ---------- Dropping files into the sidebar ----------
 
-  async function importFiles(files, folder) {
-    let made = 0;
-    let skipped = 0;
-    let last = null;
-    for (const file of files) {
-      const dot = file.name.lastIndexOf('.');
-      const language = deps.extToLang(dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '');
-      if (!language || file.size > 1024 * 1024) { skipped++; continue; }
-      try {
-        const row = await deps.api('POST', '/api/sessions', {
-          title: file.name.slice(0, dot).slice(0, 100) || 'Untitled', language, code: (await file.text()).replace(/\r\n/g, '\n'), folder,
-        });
-        last = row.id;
-        made++;
-      } catch {
-        skipped++;
-      }
-    }
-    deps.toast(`Imported ${made} ${made === 1 ? 'file' : 'files'}${skipped ? `, skipped ${skipped} unsupported or too large` : ''}`);
-    await deps.refresh();
-    if (last) deps.open(last);
-  }
-
   function bindDrop() {
-    const panel = document.querySelector('[data-panel="files"]');
     const hasFiles = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
-    const clear = () => { panel.classList.remove('drop-files'); panel.querySelectorAll('.drop-folder').forEach((r) => r.classList.remove('drop-folder')); };
-    panel.addEventListener('dragover', (e) => {
+    const clear = () => {
+      document.body.classList.remove('dropping-files');
+      document.querySelectorAll('.drop-folder').forEach((r) => r.classList.remove('drop-folder'));
+    };
+    window.addEventListener('dragover', (e) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
-      panel.classList.add('drop-files');
-      panel.querySelectorAll('.drop-folder').forEach((r) => r.classList.remove('drop-folder'));
+      document.body.classList.add('dropping-files');
+      document.querySelectorAll('.drop-folder').forEach((r) => r.classList.remove('drop-folder'));
       e.target.closest?.('.tree-row[data-folder]')?.classList.add('drop-folder');
-    });
-    panel.addEventListener('dragleave', (e) => { if (!panel.contains(e.relatedTarget)) clear(); });
-    panel.addEventListener('drop', (e) => {
+    }, true);
+    window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) clear(); }, true);
+    window.addEventListener('drop', (e) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
+      e.stopPropagation();
       const folder = e.target.closest?.('.tree-row[data-folder]')?.dataset.folder ?? deps.state.folder ?? '';
       clear();
-      importFiles([...e.dataTransfer.files], folder);
-    });
-    for (const type of ['dragover', 'drop']) window.addEventListener(type, (e) => { if (hasFiles(e) && !panel.contains(e.target)) e.preventDefault(); });
+      deps.dropped(e.dataTransfer, folder);
+    }, true);
   }
 
   // ---------- Missing imports ----------

@@ -27,7 +27,8 @@
     <symbol id="i-clear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="m4.2 11.8 7.6-7.6" stroke="currentColor" stroke-width="1.2"/></symbol>
     <symbol id="i-link" viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M9 7a3 3 0 0 0-4.2 0l-2 2A3 3 0 0 0 7 13.2l.8-.8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
     <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
-    <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.5M4.8 5.5 8 2.3l3.2 3.2M2.5 10v2.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-folder"viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
     <symbol id="i-folder-fill" viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" style="fill:var(--pressed);stroke:var(--text-muted)" stroke-width="1" stroke-linejoin="round"/></symbol>
     <symbol id="i-console" viewBox="0 0 16 16"><path d="M5 3.3v9.4c0 .4.4.6.7.4l7-4.7a.5.5 0 0 0 0-.8l-7-4.7a.5.5 0 0 0-.7.4Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
     <symbol id="i-viz" viewBox="0 0 16 16"><path d="M3.5 13V8.5M6.5 13V4M9.5 13V7M12.5 13V2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
@@ -96,6 +97,7 @@
           <div class="tw-header">
             <span class="tw-title">Project</span>
             <div class="tw-actions">
+              <button id="treeImportBtn" class="icon-btn sm" title="Upload files, a folder or a zip"><svg><use href="#i-upload"/></svg></button>
               <button id="treeNewBtn" class="icon-btn sm" title="New file"><svg><use href="#i-plus"/></svg></button>
               <button class="icon-btn sm" data-float="files" title="Float"><svg><use href="#i-float"/></svg></button>
               <button class="icon-btn sm" data-hide="files" title="Hide"><svg><use href="#i-close"/></svg></button>
@@ -121,11 +123,13 @@
           <div id="map" class="mesh" hidden></div>
           <div id="welcome" class="welcome">
             <strong>No files open</strong>
-            <span>This project is empty. Create a file, or drop files onto the sidebar to import them.</span>
+            <span>This project is empty. Create a file, or drag files, a folder or a zip anywhere in this window.</span>
             <div class="welcome-actions">
               <button id="welcomeNew" class="mesh-btn primary" type="button">New file</button>
               <button id="welcomeProject" class="mesh-btn" type="button">New project</button>
-              <button id="welcomeImport" class="mesh-btn" type="button">Import folder</button>
+              <button id="welcomeFiles" class="mesh-btn" type="button">Upload files</button>
+              <button id="welcomeImport" class="mesh-btn" type="button">Upload folder</button>
+              <button id="welcomeZip" class="mesh-btn" type="button">Upload zip</button>
             </div>
             <span class="welcome-sub">Or try an example in the Visualizer</span>
             <div id="welcomeExamples" class="welcome-actions welcome-examples"></div>

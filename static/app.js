@@ -320,7 +320,9 @@ function paletteCommands() {
   return [
     { label: 'New file…', keys: 'Alt+N', run: () => newFileDialog() },
     { label: 'New project…', run: () => Projects.open() },
-    { label: 'Import folder…', run: () => Projects.importFolder() },
+    { label: 'Upload files…', run: () => Projects.importFiles(state.folder || '') },
+    { label: 'Upload folder…', run: () => Projects.importFolder() },
+    { label: 'Upload zip…', run: () => Projects.importZip() },
     { label: 'Write project to terminal workspace', run: syncProject },
     { label: 'Save', keys: 'Ctrl+S', run: save },
     { label: 'Close tab', keys: 'Alt+W', run: () => closeTab(state.tabKey) },
@@ -640,10 +642,26 @@ function unsavedMenu(e) {
   ]);
 }
 
+function importMenu(x, y, folder = '') {
+  showMenu(x, y, [
+    { label: folder ? `Upload files into ${folder.split('/').pop()}…` : 'Upload files…', run: () => Projects.importFiles(folder) },
+    { label: 'Upload folder…', run: () => Projects.importFolder() },
+    { label: 'Upload zip…', run: () => Projects.importZip() },
+    '-',
+    { label: 'Or drag files, folders or a zip anywhere in the window', run: () => {} },
+  ]);
+}
+
+function importMenuAt(e, folder) {
+  const box = e.currentTarget.getBoundingClientRect();
+  importMenu(box.left, box.bottom + 4, folder);
+}
+
 function folderMenu(e, path) {
   e.preventDefault();
   showMenu(e.clientX, e.clientY, [
     { label: 'New file here…', run: () => newFileDialog(path) },
+    { label: 'Upload files here…', run: () => Projects.importFiles(path) },
     { label: 'Open in project map', run: () => { ProjectMap.setFolder(path); setView('map'); } },
     '-',
     { label: 'Rename…', run: () => renameFolder(path) },
@@ -933,7 +951,10 @@ function bindUi() {
   Examples.render($('#welcomeExamples'), openExample);
   $('#welcomeProject').addEventListener('click', () => Projects.open());
   $('#welcomeImport').addEventListener('click', () => Projects.importFolder());
+  $('#welcomeFiles').addEventListener('click', () => Projects.importFiles(''));
+  $('#welcomeZip').addEventListener('click', () => Projects.importZip());
   el.treeNewBtn.addEventListener('click', () => newFileDialog());
+  $('#treeImportBtn').addEventListener('click', (e) => importMenuAt(e, state.folder || ''));
 
   Workspace.bind();
   Settings.init();
@@ -1195,13 +1216,13 @@ function init() {
     refactor: (req) => (state.id ? Refactor.offer({ ...req, id: state.id }) : null), runner: () => Runner.id(), applyCode: applyMeshCode, touch: () => { if (state.id || state.dirty) markDirty(); }, output: meshOutput,
   });
   ProjectMap.init({
-    api, toast, relTime, open: openFromMap, newFile: newFileIn,
+    api, toast, relTime, open: openFromMap, newFile: newFileIn, importMenu: importMenuAt,
     moved: (id, folder) => { if (id === state.id) state.folder = folder; },
   });
   Terminals.init();
   Qol.init({
     tabs: () => tabs, state, switchTab, editor: () => editor, api, toast, extToLang: (ext) => EXT_LANG[ext],
-    refresh: refreshTree, open: (id) => openFromMap(id, Prefs.get('openAs')),
+    refresh: refreshTree, open: (id) => openFromMap(id, Prefs.get('openAs')), dropped: (transfer, folder) => Projects.dropped(transfer, folder),
   });
   Projects.init({ api, toast, refresh: refreshTree, openSession, extToLang: (ext) => EXT_LANG[ext], folders: () => state.folders });
   Refactor.init({ api, toast, applied: () => { refreshTree(); ProjectMap.refresh?.(); } });

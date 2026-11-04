@@ -29,6 +29,7 @@ const ProjectMap = (() => {
       crumbs: make('nav', { className: 'map-crumbs', ariaLabel: 'Folder path' }),
       newFile: make('button', { type: 'button', className: 'mesh-btn primary', textContent: 'New file', title: 'New file in this folder' }),
       newFolder: make('button', { type: 'button', className: 'mesh-btn', textContent: 'New folder', title: 'New folder here' }),
+      upload: make('button', { type: 'button', className: 'mesh-btn', textContent: 'Upload', title: 'Upload files, a folder or a zip' }),
       stage: make('div', { className: 'map-stage' }),
       wires: svg('svg', { class: 'map-wires' }),
       rootCol: make('div', { className: 'map-col map-root' }),
@@ -38,12 +39,13 @@ const ProjectMap = (() => {
     };
     ui.empty.append(make('strong', { textContent: 'This folder is empty' }), make('span', { textContent: 'Create a file, or drag a file here from another folder.' }));
     ui.stage.append(ui.wires, ui.rootCol, ui.kidCol, ui.empty, ui.tip);
-    const bar = make('div', { className: 'mesh-bar' }, ui.crumbs, make('span', { className: 'mesh-status' }), ui.newFolder, ui.newFile);
+    const bar = make('div', { className: 'mesh-bar' }, ui.crumbs, make('span', { className: 'mesh-status' }), ui.upload, ui.newFolder, ui.newFile);
     bar.querySelector('.mesh-status').style.marginLeft = '0';
     ui.crumbs.style.marginRight = 'auto';
     root.append(bar, ui.stage);
     ui.newFile.addEventListener('click', () => deps.newFile(cwd));
     ui.newFolder.addEventListener('click', createFolder);
+    ui.upload.addEventListener('click', (e) => deps.importMenu(e, cwd));
     ui.stage.addEventListener('scroll', schedule, { passive: true });
     new ResizeObserver(schedule).observe(ui.stage);
     Prefs.on((key) => { if (visible && (key === 'wireStyle' || key === 'grid')) paint(); });

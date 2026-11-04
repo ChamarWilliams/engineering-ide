@@ -174,3 +174,13 @@ def test_import_endpoint_builds_folders(client):
         assert {f["title"] for f in tree["files"] if f["folder"].startswith("zz-imp")} == {"util", "main"}
     finally:
         client.delete("/api/folders", params={"path": "zz-imp", "force": "true"})
+
+
+def test_import_survives_nul_bytes(client):
+    files = [{"path": "a.py", "content": "x = 1\x00\n"}, {"path": "b.py", "content": "y = 2\n"}]
+    res = client.post("/api/import", json={"folder": "zz-nul", "files": files})
+    try:
+        assert res.status_code == 201, res.text
+        assert res.json()["imported"] == 2
+    finally:
+        client.delete("/api/folders", params={"path": "zz-nul", "force": "true"})

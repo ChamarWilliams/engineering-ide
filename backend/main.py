@@ -3,6 +3,7 @@ import base64
 import hmac
 import io
 import json
+import logging
 import os
 import time
 from collections import defaultdict, deque
@@ -38,6 +39,7 @@ AGENT_FILES = (
     ("requirements-libs.txt", ROOT / "requirements-libs.txt"),
 )
 MAX_CODE = 200_000
+log = logging.getLogger("uvicorn.error")
 MAX_LAYOUT = 100_000
 FOLDER_PART = re.compile(r"^[A-Za-z0-9 _.-]{1,40}$")
 
@@ -290,9 +292,15 @@ def _store(folder, files):
             skipped += 1
             continue
         pieces = target.split("/") if target else []
-        for i in range(len(pieces)):
-            db.add_folder("/".join(pieces[: i + 1]))
-        row = db.upsert_session(_new_id(), title, language, text.replace("\r\n", "\n"), None, target)
+        clean = text.replace("\r\n", "\n").replace("\x00", "").encode("utf-8", "replace").decode("utf-8")
+        try:
+            for i in range(len(pieces)):
+                db.add_folder("/".join(pieces[: i + 1]))
+            row = db.upsert_session(_new_id(), title.replace("\x00", ""), language, clean, None, target)
+        except Exception:
+            log.exception("import failed for %s", path)
+            skipped += 1
+            continue
         first = first or row["id"]
         ids[path] = row["id"]
         made += 1

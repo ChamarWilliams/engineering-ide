@@ -334,6 +334,7 @@ function paletteCommands() {
   return [
     { label: 'New file…', keys: 'Alt+N', run: () => newFileDialog() },
     { label: 'New project…', run: () => Projects.open() },
+    { label: 'Open on your phone or another device…', run: () => Device.open() },
     { label: 'Privacy and safety notice', run: showNotice },
     { label: 'Upload files…', run: () => Projects.importFiles(state.folder || '') },
     { label: 'Upload folder…', run: () => Projects.importFolder() },
@@ -976,6 +977,8 @@ function bindUi() {
   $('#welcomeFiles').addEventListener('click', () => Projects.importFiles(''));
   $('#welcomeZip').addEventListener('click', () => Projects.importZip());
   $('#welcomeNotice').addEventListener('click', showNotice);
+  $('#welcomeDevice').addEventListener('click', () => Device.open());
+  $('#treeDeviceBtn').addEventListener('click', () => Device.open());
   el.treeNewBtn.addEventListener('click', () => newFileDialog());
   $('#treeImportBtn').addEventListener('click', (e) => importMenuAt(e, state.folder || ''));
 
@@ -1250,6 +1253,7 @@ function init() {
   });
   Terminals.init();
   Pipeline.init();
+  Device.init({ api, toast });
   Qol.init({
     tabs: () => tabs, state, switchTab, editor: () => editor, api, toast, extToLang: (ext) => EXT_LANG[ext],
     refresh: refreshTree, open: (id) => openFromMap(id, Prefs.get('openAs')), dropped: (transfer, folder) => Projects.dropped(transfer, folder),

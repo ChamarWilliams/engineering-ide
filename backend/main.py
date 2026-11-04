@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response, WebSocket
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -86,6 +86,11 @@ async def guard(request: Request, call_next):
         hits.append(now)
     if not MULTIUSER:
         return await call_next(request)
+    linked = request.query_params.get("ws", "")
+    if request.method == "GET" and request.url.path == "/" and VISITOR_RE.match(linked):
+        response = RedirectResponse("/", status_code=303)
+        _remember_visitor(request, response, linked)
+        return response
     visitor = request.cookies.get("eide_vid", "")
     fresh = not VISITOR_RE.match(visitor)
     if fresh:
@@ -96,9 +101,13 @@ async def guard(request: Request, call_next):
     finally:
         db.current_owner.reset(token)
     if fresh:
-        secure = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
-        response.set_cookie("eide_vid", visitor, max_age=60 * 60 * 24 * 365, httponly=True, samesite="lax", secure=secure)
+        _remember_visitor(request, response, visitor)
     return response
+
+
+def _remember_visitor(request, response, visitor):
+    secure = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+    response.set_cookie("eide_vid", visitor, max_age=60 * 60 * 24 * 365, httponly=True, samesite="lax", secure=secure)
 
 
 @app.exception_handler(LookupError)
@@ -597,6 +606,11 @@ async def lint_source(body: SourceIn):
             return {"diagnostics": await asyncio.to_thread(tools.lint_code, body.language, body.code)}
         except tools.ToolError as err:
             raise HTTPException(422, str(err))
+
+
+@app.get("/api/workspace/link")
+def workspace_link():
+    return {"shared": not MULTIUSER, "token": db.current_owner.get()}
 
 
 @app.get("/api/runtimes")

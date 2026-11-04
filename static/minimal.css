@@ -134,3 +134,7 @@ body.dropping-files::after { content: "Drop to import files, folders or a zip"; 
 .pipe-playing .pipe-pending { opacity: 0.3; }
 .pipe-on { background: var(--hover); border-color: var(--accent); }
 @media (max-width: 640px) { .pipe-card { flex-basis: 100%; max-width: none; } .pipe-card:not(:last-child)::after { display: none; } }
+.dev-body { display: flex; flex-direction: column; gap: 10px; min-width: min(380px, 80vw); }
+.dev-row { display: flex; gap: 8px; }
+.dev-qr { align-self: center; padding: 10px; background: #ffffff; border-radius: var(--radius); line-height: 0; }
+.dev-qr[hidden] { display: none; }

@@ -27,6 +27,7 @@
     <symbol id="i-clear" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="m4.2 11.8 7.6-7.6" stroke="currentColor" stroke-width="1.2"/></symbol>
     <symbol id="i-link" viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2-2a3 3 0 0 0-4.2-4.2l-.8.8M9 7a3 3 0 0 0-4.2 0l-2 2A3 3 0 0 0 7 13.2l.8-.8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
     <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 16 16"><rect x="4.5" y="1.5" width="7" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M7 12.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
     <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 10.5V2.5M4.8 5.5 8 2.3l3.2 3.2M2.5 10v2.5a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-folder"viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></symbol>
     <symbol id="i-folder-fill" viewBox="0 0 16 16"><path d="M1.5 4.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H8L6.5 3.5h-4a1 1 0 0 0-1 1Z" style="fill:var(--pressed);stroke:var(--text-muted)" stroke-width="1" stroke-linejoin="round"/></symbol>
@@ -97,6 +98,7 @@
           <div class="tw-header">
             <span class="tw-title">Project</span>
             <div class="tw-actions">
+              <button id="treeDeviceBtn" class="icon-btn sm" title="Open on your phone or another device"><svg><use href="#i-phone"/></svg></button>
               <button id="treeImportBtn" class="icon-btn sm" title="Upload files, a folder or a zip"><svg><use href="#i-upload"/></svg></button>
               <button id="treeNewBtn" class="icon-btn sm" title="New file"><svg><use href="#i-plus"/></svg></button>
               <button class="icon-btn sm" data-float="files" title="Float"><svg><use href="#i-float"/></svg></button>
@@ -130,6 +132,7 @@
               <button id="welcomeFiles" class="mesh-btn" type="button">Upload files</button>
               <button id="welcomeImport" class="mesh-btn" type="button">Upload folder</button>
               <button id="welcomeZip" class="mesh-btn" type="button">Upload zip</button>
+              <button id="welcomeDevice" class="mesh-btn" type="button">Use on your phone</button>
             </div>
             <span class="welcome-sub">Or try an example in the Visualizer</span>
             <div id="welcomeExamples" class="welcome-actions welcome-examples"></div>
@@ -247,6 +250,7 @@
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/loader.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/filetypes.js"></script>
   <script src="/newfile.js"></script>
   <script src="/projects.js"></script>
@@ -272,6 +276,7 @@
   <script src="/mesh.js"></script>
   <script src="/map.js"></script>
   <script src="/pipeline.js"></script>
+  <script src="/device.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

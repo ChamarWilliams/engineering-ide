@@ -16,6 +16,18 @@ const Pipeline = (() => {
     const lines = (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
     return (pattern && lines.find((l) => pattern.test(l))) || lines[0] || '';
   };
+  const COMPILER_ERROR = /^(.+?):(\d+):(?:\d+:)?\s*(?:fatal )?error:\s*(.*)$/i;
+
+  function compileProblem(text) {
+    const lines = (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const l of lines) {
+      const m = l.match(COMPILER_ERROR);
+      if (m) return { file: m[1].split(/[\\/]/).pop(), line: m[2], msg: m[3] };
+    }
+    const loose = lines.find((l) => /\berror\b\s*(\[\w+\])?:/i.test(l)) ?? lines[0] ?? '';
+    return { file: '', line: '', msg: loose || 'The compiler gave no details' };
+  }
+
   const callCount = (trace) => (trace.events ?? []).filter((e) => e.e === 'call').length;
 
   function sendStage(info, serverMs) {
@@ -30,8 +42,11 @@ const Pipeline = (() => {
     const tool = (compile?.tool ?? '').replace(/\.exe$/i, '').toLowerCase();
     if (!compile) return { id: 'build', state: 'skip', detail: `No build step: ${info.label} runs directly`, ms: 0 };
     if (compile.exit_code !== 0) {
-      const why = firstLine(info.compileText, /error/i);
-      return { id: 'build', state: 'fail', detail: `${tool} could not build the program${why ? `: ${why}` : ''}`, ms: compile.ms, recovery: 'Your code is unchanged. Fix the error in the editor and run again.' };
+      const problem = compileProblem(info.compileText);
+      const elsewhere = problem.file && !/^main\./i.test(problem.file) && !/^Main\.java$/.test(problem.file);
+      const place = problem.line ? `Line ${problem.line}${elsewhere ? ` of ${problem.file}` : ''}: ` : elsewhere ? `${problem.file}: ` : '';
+      const fix = elsewhere ? `${problem.file} is another file in this folder. Fix it, or move your program to its own folder.` : 'Your code is unchanged. Fix the error in the editor and run again.';
+      return { id: 'build', state: 'fail', detail: `${tool} could not build the program. ${place}${problem.msg}`.trim(), ms: compile.ms, recovery: fix };
     }
     return { id: 'build', state: 'ok', detail: `Built with ${tool}`, ms: compile.ms };
   }

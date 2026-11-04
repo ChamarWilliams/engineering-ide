@@ -200,3 +200,20 @@ def test_standalone_c_programs_in_one_folder_do_not_clash(client, tools):
         assert normalize("".join(s.get("stdout", "") for s in run["steps"])) == "one\n"
     finally:
         client.delete("/api/folders", params={"path": folder, "force": "true"})
+
+
+def test_workspace_link_opens_same_files_on_another_device(client, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend import main
+
+    monkeypatch.setattr(main, "MULTIUSER", True)
+    phone, laptop, stranger = TestClient(main.app), TestClient(main.app), TestClient(main.app)
+    laptop.post("/api/sessions", json={"title": "mine", "language": "python", "code": "x = 1\n"})
+    link = laptop.get("/api/workspace/link").json()
+    assert link["shared"] is False and len(link["token"]) == 24
+    phone.get(f"/?ws={link['token']}")
+    assert [f["title"] for f in phone.get("/api/tree").json()["files"]] == ["mine"]
+    assert stranger.get("/api/tree").json()["files"] == []
+    stranger.get("/?ws=not-a-real-token")
+    assert stranger.get("/api/tree").json()["files"] == []

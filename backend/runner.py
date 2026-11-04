@@ -19,6 +19,7 @@ FILE_LIMIT = 1024 * 1024
 TRACE_LIMIT = 4 * 1024 * 1024
 RICH_LIMIT = 6 * 1024 * 1024
 IS_POSIX = os.name == "posix"
+ON_REPLIT = bool(os.environ.get("REPL_ID") or os.environ.get("REPLIT_DEPLOYMENT"))  # its runtimes need more address space than RLIMIT_AS allows
 BINARY = "out.bin" if IS_POSIX else "out.exe"
 EXTRA_ENV = ()
 ENV_KEEP = ("PATH", "LANG", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "TEMP", "TMP")
@@ -113,12 +114,13 @@ def _child_env(workdir):
     return env
 
 
-def _limit_child(address_space=True):
+def _limit_child(address_space=True, cpu_factor=1):
     import resource
 
     if address_space:
         resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
-    resource.setrlimit(resource.RLIMIT_CPU, (int(RUN_TIMEOUT) + 1, int(RUN_TIMEOUT) + 1))
+    cpu = int(RUN_TIMEOUT) * cpu_factor + 1
+    resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu))
     resource.setrlimit(resource.RLIMIT_FSIZE, (FILE_LIMIT, FILE_LIMIT))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
@@ -197,7 +199,8 @@ def _step(run, phase, cmd, workdir, timeout, limited, sandbox=None, language=Non
     if IS_POSIX:
         kwargs["start_new_session"] = True
         if limited:
-            kwargs["preexec_fn"] = partial(_limit_child, language not in LARGE_VM)
+            big = language in LARGE_VM or ON_REPLIT
+            kwargs["preexec_fn"] = partial(_limit_child, not big, 4 if big else 1)
     else:
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
 

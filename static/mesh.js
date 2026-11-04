@@ -1121,31 +1121,43 @@ print(table.concat(data, " "))
     syncControls();
     const runId = deps.uid();
     play.runId = runId;
+    const source = deps.code();
+    const base = { label: deps.label(), lines: source.split('\n').length, bytes: new Blob([source]).size };
     try {
       let traced = null;
+      let fallback = null;
       if (TRACEABLE.has(lang())) {
-        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner(), id: deps.sessionId() });
+        const sent = performance.now();
+        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: lang(), code: source, runner: deps.runner(), id: deps.sessionId() });
+        const roundtrip = performance.now() - sent;
         if (play?.token !== token) return false;
         if (r.trace || lang() === 'python') {
           deps.output({ kind: 'trace', result: r });
-          if (!r.trace) { play = null; toastErr(r); syncControls(); return false; }
+          if (!r.trace) { Pipeline.report({ ...base, via: 'trace', result: r, roundtrip }); play = null; toastErr(r); syncControls(); return false; }
           traced = r.trace;
+          stats.clear();
+          const drawn = performance.now();
+          play = { ...prepare(traced), token, rawTrace: traced, mode: 'run' };
+          play.note = traced.cut ? `trace cut (${traced.cut === 'stepping' ? 'debugger stopped' : `${traced.cut} limit`})` : '';
+          Pipeline.report({ ...base, via: 'trace', result: r, roundtrip, drawMs: performance.now() - drawn, drawNote: `Built ${play.units.length} replay steps for the Flow view` });
+        } else {
+          fallback = r.error || 'the tracer returned nothing';
         }
       }
-      if (traced) {
-        stats.clear();
-        play = { ...prepare(traced), token, rawTrace: traced, mode: 'run' };
-        play.note = traced.cut ? `trace cut (${traced.cut === 'stepping' ? 'debugger stopped' : `${traced.cut} limit`})` : '';
-      } else {
-        const r = await deps.api('POST', '/api/run', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner(), id: deps.sessionId() });
+      if (!traced) {
+        const sent = performance.now();
+        const r = await deps.api('POST', '/api/run', { run_id: runId, language: lang(), code: source, runner: deps.runner(), id: deps.sessionId() });
+        const roundtrip = performance.now() - sent;
         if (play?.token !== token) return false;
         deps.output({ kind: 'run', result: r });
-        if (r.error) { play = null; syncControls(); return false; }
+        if (r.error) { Pipeline.report({ ...base, via: 'run', result: r, roundtrip, fallback }); play = null; syncControls(); return false; }
         stats.clear();
+        const drawn = performance.now();
         play = { ...prepareStatic(r), token, mode: 'run' };
+        Pipeline.report({ ...base, via: 'run', result: r, roundtrip, fallback, drawMs: performance.now() - drawn, drawNote: 'Laid out the call order for the Flow view' });
       }
     } catch (err) {
-      if (play?.token === token) { play = null; deps.toast(`Couldn't run: ${err.message}`); }
+      if (play?.token === token) { Pipeline.report({ ...base, via: 'run', sendError: err.message }); play = null; deps.toast(`Couldn't run: ${err.message}`); }
       syncControls();
       return false;
     }

@@ -833,10 +833,17 @@ async function run() {
   el.runTab.textContent = fileName();
   el.runMeta.textContent = 'Running…';
 
+  const source = editor.getValue();
+  const base = { via: 'run', label: LANGS[state.language].label, lines: source.split('\n').length, bytes: new Blob([source]).size };
   try {
-    const result = await api('POST', '/api/run', { run_id: runId, language: state.language, code: editor.getValue(), runner: Runner.id(), id: state.id });
+    const sent = performance.now();
+    const result = await api('POST', '/api/run', { run_id: runId, language: state.language, code: source, runner: Runner.id(), id: state.id });
+    const roundtrip = performance.now() - sent;
+    const drawn = performance.now();
     renderRun(result);
+    Pipeline.report({ ...base, result, roundtrip, drawMs: performance.now() - drawn, drawNote: 'Printed the output to the console' });
   } catch (err) {
+    Pipeline.report({ ...base, sendError: err.message });
     consoleWrite(`Run failed: ${err.message}`, 'c-err');
     el.runMeta.textContent = '';
   } finally {
@@ -959,7 +966,7 @@ function bindUi() {
   el.rerunBtn.addEventListener('click', run);
   el.stopBtn.addEventListener('click', stop);
   el.stopBtn2.addEventListener('click', stop);
-  el.clearBtn.addEventListener('click', () => { el.console.replaceChildren(); el.runMeta.textContent = ''; });
+  el.clearBtn.addEventListener('click', () => { el.console.replaceChildren(); el.runMeta.textContent = ''; Pipeline.clear(); });
   el.shareBtn.addEventListener('click', share);
   el.tabNew.addEventListener('click', () => newFileDialog());
   $('#welcomeNew').addEventListener('click', () => newFileDialog());
@@ -1234,7 +1241,7 @@ function init() {
     runTrace: () => Timeline.runTrace?.(),
   });
   Mesh.init({
-    api, toast, uid, openFile: openFromMap, history: stepHistory, sessionId: () => state.id, code: () => editor.getValue(), language: () => state.language, monacoLanguage: () => LANGS[state.language].monaco,
+    api, toast, uid, openFile: openFromMap, history: stepHistory, sessionId: () => state.id, label: () => LANGS[state.language].label, code: () => editor.getValue(), language: () => state.language, monacoLanguage: () => LANGS[state.language].monaco,
     refactor: (req) => (state.id ? Refactor.offer({ ...req, id: state.id }) : null), runner: () => Runner.id(), applyCode: applyMeshCode, touch: () => { if (state.id || state.dirty) markDirty(); }, output: meshOutput,
   });
   ProjectMap.init({
@@ -1242,6 +1249,7 @@ function init() {
     moved: (id, folder) => { if (id === state.id) state.folder = folder; },
   });
   Terminals.init();
+  Pipeline.init();
   Qol.init({
     tabs: () => tabs, state, switchTab, editor: () => editor, api, toast, extToLang: (ext) => EXT_LANG[ext],
     refresh: refreshTree, open: (id) => openFromMap(id, Prefs.get('openAs')), dropped: (transfer, folder) => Projects.dropped(transfer, folder),

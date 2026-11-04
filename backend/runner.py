@@ -518,10 +518,14 @@ sys.exit(status)
 '''
 
 
+def _phase(step):
+    return {"phase": step["phase"], "tool": step["command"].split(" ")[0], "ms": step["duration_ms"], "exit_code": step["exit_code"], "timed_out": step["timed_out"]}
+
+
 def run_trace(run_id, language, code, sandbox=None, extras=()):
     result = {
         "trace": None, "stderr": "", "exit_code": None, "timed_out": False,
-        "stopped": False, "error": None, "duration_ms": 0,
+        "stopped": False, "error": None, "duration_ms": 0, "phases": [],
     }
     if language != "python":
         return _trace_other(run_id, language, code, sandbox, result, extras)
@@ -538,6 +542,7 @@ def run_trace(run_id, language, code, sandbox=None, extras=()):
                     f.write(text)
             python = sandbox.tools["python"] if sandbox else toolchain()["python"]
             step = _step(run, "trace", [python, "-u", "_tracer.py"], workdir, RUN_TIMEOUT, True, sandbox, "python")
+            result["phases"].append(_phase(step))
             result.update(stderr=step["stderr"], exit_code=step["exit_code"], timed_out=step["timed_out"])
             path = os.path.join(workdir, ".trace.json")
             if os.path.exists(path) and os.path.getsize(path) <= TRACE_LIMIT:
@@ -577,6 +582,7 @@ def _trace_other(run_id, language, code, sandbox, result, extras=()):
                     at = compile_cmd.index(plan["source"]) + 1
                     compile_cmd[at:at] = [n for n in siblings if n.endswith((".c", ".cpp"))]
                 built = _step(run, "compile", compile_cmd, workdir, COMPILE_TIMEOUT, False, None, language)
+                result["phases"].append(_phase(built))
                 if built["exit_code"] != 0:
                     result.update(stderr=built["stderr"] or built["stdout"], exit_code=built["exit_code"], timed_out=built["timed_out"])
                     first = next((ln.strip() for ln in (built["stderr"] or "").splitlines() if "error" in ln.lower()), "")
@@ -586,6 +592,7 @@ def _trace_other(run_id, language, code, sandbox, result, extras=()):
             if "EIDE_SRC" in env and language in ("c", "cpp"):
                 env["EIDE_SRC"] = ",".join([plan["source"], *(n for n in siblings if n.endswith((".c", ".cpp")))])
             step = _step(run, "trace", plan["run"], workdir, tracers.TRACE_TIMEOUT, True, None, plan["label"], env)
+            result["phases"].append(_phase(step))
             result.update(stderr=step["stderr"], exit_code=step["exit_code"], timed_out=step["timed_out"])
             result["trace"] = tracers.read_trace(workdir, plan["parse"])
             if result["trace"]:

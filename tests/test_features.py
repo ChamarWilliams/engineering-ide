@@ -184,3 +184,19 @@ def test_import_survives_nul_bytes(client):
         assert res.json()["imported"] == 2
     finally:
         client.delete("/api/folders", params={"path": "zz-nul", "force": "true"})
+
+
+def test_standalone_c_programs_in_one_folder_do_not_clash(client, tools):
+    if not tools.get("c"):
+        pytest.skip("gcc is not installed here")
+    folder = "zz-programs"
+    ok = save(client, "first", "c", '#include <stdio.h>\nint main(void){puts("one");return 0;}\n', folder=folder)
+    save(client, "second", "c", '#include <stdio.h>\nint main(void){puts("two");return 0;}\n', folder=folder)
+    save(client, "broken", "c", "int main(void){ int x = ; }\n", folder=folder)
+    try:
+        code = client.get(f"/api/sessions/{ok}").json()["code"]
+        run = client.post("/api/run", json={"run_id": rid(), "language": "c", "code": code, "id": ok}).json()
+        assert run["error"] is None, run
+        assert normalize("".join(s.get("stdout", "") for s in run["steps"])) == "one\n"
+    finally:
+        client.delete("/api/folders", params={"path": folder, "force": "true"})

@@ -177,13 +177,15 @@ def _siblings(body):
                 out.append((stem + MODULE_EXT[body.language], f["code"]))
                 taken.add(stem)
         return out[:60]
+    if not me["folder"]:
+        return []
     for f in db.all_codes():
         if f["id"] == body.id or f["language"] != body.language or f["folder"] != me["folder"]:
             continue
         stem = re.sub(r"[^A-Za-z0-9_-]", "_", f["title"]).strip("_") or "file"
         funcs = [n for n in graph.analyze(body.language, f["code"])["nodes"] if n["kind"] == "function"]
         ext = ".c" if body.language == "c" else ".cpp"
-        if stem in ("main", "out") or stem + ".h" in taken:
+        if stem in ("main", "out") or stem + ".h" in taken or any(n["name"] == "main" for n in funcs):
             continue
         if funcs:
             out.append((stem + ext, f["code"]))

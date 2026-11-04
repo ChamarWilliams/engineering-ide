@@ -110,3 +110,27 @@ body.running #runBtn { background: none; color: var(--green); }
 body.dropping-files::after { content: "Drop to import files, folders or a zip"; position: fixed; inset: 8px; z-index: 900; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--text); font-size: 16px; pointer-events: none; }
 .tree-row.drop-folder { background: var(--hover); outline: 1px solid var(--accent); }
 .link-btn { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }
+.pipe { border-bottom: 1px solid var(--line); padding: 8px 12px 10px; background: var(--bg-panel); }
+.pipe[hidden] { display: none; }
+.pipe-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; color: var(--text-muted); }
+.pipe-title { font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px; }
+.pipe-total { margin-right: auto; font-variant-numeric: tabular-nums; }
+.pipe-slow { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.pipe-btn { height: 24px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: none; color: var(--text-2); font: inherit; cursor: pointer; }
+.pipe-btn:hover { background: var(--hover); color: var(--text); }
+.pipe-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.pipe-card { position: relative; flex: 1 1 150px; min-width: 140px; max-width: 280px; display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; transition: opacity 0.25s, border-color 0.25s, background 0.25s; }
+.pipe-card:not(:last-child)::after { content: ">"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 11px; background: var(--bg-panel); line-height: 1; }
+.pipe-top { display: flex; align-items: center; gap: 6px; }
+.pipe-ms { margin-left: auto; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.pipe-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: none; }
+.pipe-skip .pipe-dot { background: var(--text-faint); }
+.pipe-warn .pipe-dot, .pipe-fallback .pipe-dot { background: #d9a441; }
+.pipe-fail .pipe-dot { background: var(--err); }
+.pipe-fail { border-color: var(--err); }
+.pipe-warn, .pipe-fallback { border-color: #d9a441; }
+.pipe-detail { color: var(--text-2); overflow-wrap: anywhere; }
+.pipe-fix { color: var(--text-muted); font-style: italic; overflow-wrap: anywhere; }
+.pipe-playing .pipe-pending { opacity: 0.3; }
+.pipe-on { background: var(--hover); border-color: var(--accent); }
+@media (max-width: 640px) { .pipe-card { flex-basis: 100%; max-width: none; } .pipe-card:not(:last-child)::after { display: none; } }

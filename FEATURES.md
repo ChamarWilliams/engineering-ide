@@ -113,3 +113,5 @@ Status: **Verified** means I exercised it in the browser or with a test. **Built
 - Multi-file builds for the remote runner agent and Docker sandbox (they compile the single open file).
 - Hover type details on Flow wires for languages other than C and C++.
 - Import: Upload files, folder or zip from the sidebar, Map view, welcome screen and command palette, or drag them anywhere in the window
+- Run pipeline: after every run a diagram shows what each stage did (send, build, run or trace, draw) with real timings, marks the stage that failed and what the app did about it, and has a Replay button with a Slow option
+- Same-folder C and C++ files only link in as siblings when the file is in a folder, and standalone programs with their own main are left out

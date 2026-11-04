@@ -12,7 +12,7 @@ const NewFile = (() => {
     return Object.keys(types).find((k) => types[k].exts.includes(ext)) ?? null;
   }
 
-  // Resolves to { name, type }, { kind: 'folder', name }, { kind: 'project' }, { kind: 'upload', what } or null when cancelled.
+  // Resolves to the chosen file, folder, project or upload entry, or null if cancelled.
   function open({ types, folder = '' }) {
     return new Promise((resolve) => {
       let step = 'type';

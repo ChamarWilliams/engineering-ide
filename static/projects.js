@@ -207,7 +207,7 @@ const Projects = (() => {
     }
   }
 
-  // The drop's entries expire after the event, so they are all collected before the first await.
+  // Drop entries expire after the event, so all are collected before the first await.
   async function dropped(transfer, folder = '') {
     const entries = [...transfer.items].map((i) => i.webkitGetAsEntry?.()).filter(Boolean);
     const files = [...transfer.files];

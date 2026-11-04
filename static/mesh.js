@@ -1064,7 +1064,7 @@ print(table.concat(data, " "))
 
   function nodeFor(fn, units) {
     if (fn === '<module>') return units.module;
-    return units.byName.get(fn) ?? null;
+    return units.byName.get(fn) ?? units.byName.get(short(fn)) ?? null;
   }
 
   function prepare(trace) {

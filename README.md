@@ -111,6 +111,15 @@ How it is protected:
 - Pairing issues a per-computer token. The server keeps only its hash.
 - The IDE has no accounts, so the browser creates a random owner key and sends it with each request. Only the browser that paired a computer can list it or send it code.
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The suite in `tests/` runs every file in `samples/loopline-test-project` through the real API (trace and plain run), plus files, folders, history, search, graph, multi-file C and the tracer helpers. It uses a throwaway database. A language whose tools are not installed (gcc, g++, gdb, a JDK, Lua, Go, rustc) is skipped, and `-ra` prints each skip reason. `python -m pytest tests/test_tracing.py -k go` runs one language. The sample files and the manual checklist are in `samples/loopline-test-project/TESTING.md`.
+
 ## Limits
 
 - Without `--docker` the agent runs programs directly on your machine with a time limit only. There is no memory cap and the network is open.

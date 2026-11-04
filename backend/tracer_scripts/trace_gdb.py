@@ -376,6 +376,12 @@ def finish(partial=False):
 
 
 try:
+    if os.environ.get("EIDE_BREAK") == "main.main":
+        for setting in ("handle SIGURG nostop noprint pass", "set scheduler-locking step"):
+            try:
+                gdb.execute(setting, to_string=True)
+            except gdb.error:
+                pass
     gdb.execute("tbreak " + os.environ.get("EIDE_BREAK", "main"))
     gdb.execute("run > .prog.out")
     if os.environ.get("EIDE_BREAK", "main") == "main":

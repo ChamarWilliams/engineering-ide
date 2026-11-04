@@ -70,7 +70,8 @@ def plan(language, tools):
             "files": {"_trace_gdb.py": _script("trace_gdb.py")},
             "compile": compile_cmd,
             "run": [gdb, "-q", "-batch", "-nx", "-x", "_trace_gdb.py", "./out.bin"],
-            "env": {"EIDE_SRC": source, "EIDE_BREAK": {"rust": "main::main", "go": "main.main"}.get(language, "main")},
+            "env": {"EIDE_SRC": source, "EIDE_BREAK": {"rust": "main::main", "go": "main.main"}.get(language, "main"),
+                    **({"GOMAXPROCS": "1", "GODEBUG": "asyncpreemptoff=1"} if language == "go" else {})},
             "label": "gdb",
             "parse": None,
         }, None

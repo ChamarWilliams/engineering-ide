@@ -30,9 +30,9 @@ const NewFile = (() => {
       const entries = [
         { kind: 'folder', group: 'General', label: 'Folder', badge: '/', color: '#7a7f87' },
         { kind: 'project', group: 'General', label: 'Project…', badge: '+', color: '#7a7f87' },
-        { kind: 'upload', what: 'files', group: 'Upload', label: 'Upload files…', badge: '↑', color: '#5b8def' },
-        { kind: 'upload', what: 'folder', group: 'Upload', label: 'Upload folder…', badge: '↑', color: '#5b8def' },
-        { kind: 'upload', what: 'zip', group: 'Upload', label: 'Upload zip…', ext: '.zip', badge: '↑', color: '#5b8def' },
+        { kind: 'upload', what: 'files', group: 'General', label: 'Upload files…', badge: '↑', color: '#5b8def' },
+        { kind: 'upload', what: 'folder', group: 'General', label: 'Upload folder…', badge: '↑', color: '#5b8def' },
+        { kind: 'upload', what: 'zip', group: 'General', label: 'Upload zip…', ext: '.zip', badge: '↑', color: '#5b8def' },
         ...Object.entries(types).map(([key, t]) => ({ kind: 'file', key, group: t.group, label: t.label, ext: `.${t.ext}`, badge: t.badge, color: t.color })),
       ];
 

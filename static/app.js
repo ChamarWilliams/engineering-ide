@@ -1181,6 +1181,7 @@ function init() {
   Timeline.init({ editor: () => editor, language: () => state.language, code: () => editor.getValue(), api, toast, uid });
   Visualizer.init({
     editor: () => editor,
+    sessionId: () => state.id,
     language: () => state.language,
     code: () => editor.getValue(),
     setCode,

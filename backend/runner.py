@@ -515,13 +515,13 @@ sys.exit(status)
 '''
 
 
-def run_trace(run_id, language, code, sandbox=None):
+def run_trace(run_id, language, code, sandbox=None, extras=()):
     result = {
         "trace": None, "stderr": "", "exit_code": None, "timed_out": False,
         "stopped": False, "error": None, "duration_ms": 0,
     }
     if language != "python":
-        return _trace_other(run_id, language, code, sandbox, result)
+        return _trace_other(run_id, language, code, sandbox, result, extras)
 
     run = _Run()
     with _runs_lock:
@@ -529,7 +529,8 @@ def run_trace(run_id, language, code, sandbox=None):
     started = time.perf_counter()
     try:
         with tempfile.TemporaryDirectory(prefix="eide-", ignore_cleanup_errors=True) as workdir:
-            for name, text in (("main.py", code), ("_tracer.py", TRACER)):
+            modules = [(n, t) for n, t in extras if os.path.basename(n) == n and n.endswith(".py")]
+            for name, text in (("main.py", code), ("_tracer.py", TRACER), *modules):
                 with open(os.path.join(workdir, name), "w", encoding="utf-8", newline="\n") as f:
                     f.write(text)
             python = sandbox.tools["python"] if sandbox else toolchain()["python"]
@@ -547,7 +548,7 @@ def run_trace(run_id, language, code, sandbox=None):
     return result
 
 
-def _trace_other(run_id, language, code, sandbox, result):
+def _trace_other(run_id, language, code, sandbox, result, extras=()):
     if sandbox:
         result["error"] = "Tracing in the isolated sandbox is only available for Python."
         return result
@@ -562,18 +563,26 @@ def _trace_other(run_id, language, code, sandbox, result):
     started = time.perf_counter()
     try:
         with tempfile.TemporaryDirectory(prefix="eide-", ignore_cleanup_errors=True) as workdir:
-            files = {plan["source"]: tracers.prepare_source(language, code), **plan["files"]}
+            siblings = {n: t for n, t in extras if os.path.basename(n) == n and n not in plan["files"] and n != plan["source"]}
+            files = {plan["source"]: tracers.prepare_source(language, code), **plan["files"], **siblings}
             for name, text in files.items():
                 with open(os.path.join(workdir, name), "w", encoding="utf-8", newline="\n") as f:
                     f.write(text)
             if plan["compile"]:
-                built = _step(run, "compile", plan["compile"], workdir, COMPILE_TIMEOUT, False, None, language)
+                compile_cmd = list(plan["compile"])
+                if language in ("c", "cpp"):
+                    at = compile_cmd.index(plan["source"]) + 1
+                    compile_cmd[at:at] = [n for n in siblings if n.endswith((".c", ".cpp"))]
+                built = _step(run, "compile", compile_cmd, workdir, COMPILE_TIMEOUT, False, None, language)
                 if built["exit_code"] != 0:
                     result.update(stderr=built["stderr"] or built["stdout"], exit_code=built["exit_code"], timed_out=built["timed_out"])
                     first = next((ln.strip() for ln in (built["stderr"] or "").splitlines() if "error" in ln.lower()), "")
                     result["error"] = f"Compile error: {first}" if first else "The program did not compile, so there is nothing to trace."
                     return result
-            step = _step(run, "trace", plan["run"], workdir, tracers.TRACE_TIMEOUT, True, None, plan["label"], plan["env"])
+            env = dict(plan["env"])
+            if "EIDE_SRC" in env and language in ("c", "cpp"):
+                env["EIDE_SRC"] = ",".join([plan["source"], *(n for n in siblings if n.endswith((".c", ".cpp")))])
+            step = _step(run, "trace", plan["run"], workdir, tracers.TRACE_TIMEOUT, True, None, plan["label"], env)
             result.update(stderr=step["stderr"], exit_code=step["exit_code"], timed_out=step["timed_out"])
             result["trace"] = tracers.read_trace(workdir, plan["parse"])
             if result["trace"]:

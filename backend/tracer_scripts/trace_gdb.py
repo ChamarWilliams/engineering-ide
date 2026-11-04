@@ -6,7 +6,7 @@ import time
 
 import gdb
 
-SRC = os.environ.get("EIDE_SRC", "main.c")
+SRCS = set(os.environ.get("EIDE_SRC", "main.c").split(","))
 MAX_STEPS = 1500
 MAX_ITEMS = 40
 MAX_EVENTS = 4000
@@ -43,7 +43,7 @@ def is_user(frame):
         sal = frame.find_sal()
     except gdb.error:
         return False
-    return sal.symtab is not None and os.path.basename(sal.symtab.filename) == SRC
+    return sal.symtab is not None and os.path.basename(sal.symtab.filename) in SRCS
 
 
 def user_frames():
@@ -103,7 +103,7 @@ def global_vars(frame):
         blocks = [b for b in (statics, statics.superblock if statics is not None else None) if b is not None]
         for blk in blocks:
             for sym in blk:
-                if sym.is_variable and sym.symtab and os.path.basename(sym.symtab.filename) == SRC:
+                if sym.is_variable and sym.symtab and os.path.basename(sym.symtab.filename) in SRCS:
                     try:
                         found[sym.name] = sym.value()
                     except (gdb.error, RuntimeError):

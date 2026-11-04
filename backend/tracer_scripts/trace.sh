@@ -18,6 +18,7 @@ __eide_load_base() {
 __eide_dbg() {
   local __eide_rc=$?
   [ "$2" = "./main.sh" ] || return $__eide_rc
+  [ "$BASHPID" = "$$" ] || return $__eide_rc
   __eide_n=$((__eide_n + 1))
   if [ "$__eide_n" -gt 1500 ]; then
     echo "@@CUT steps" >&3

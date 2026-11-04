@@ -619,7 +619,7 @@ async def trace(body: RunIn, x_owner_key: str | None = Header(None)):
     if body.runner != "server":
         return await agents.dispatch(body.runner, agents.owner_hash(x_owner_key), "trace", body.run_id, body.language, body.code)
     async with run_slots:
-        return await asyncio.to_thread(runner.run_trace, body.run_id, body.language, body.code)
+        return await asyncio.to_thread(runner.run_trace, body.run_id, body.language, body.code, None, _siblings(body))
 
 
 @app.post("/api/run/{run_id}/stop", status_code=204)

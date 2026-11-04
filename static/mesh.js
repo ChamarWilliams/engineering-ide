@@ -1124,7 +1124,7 @@ print(table.concat(data, " "))
     try {
       let traced = null;
       if (TRACEABLE.has(lang())) {
-        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner() });
+        const r = await deps.api('POST', '/api/trace', { run_id: runId, language: lang(), code: deps.code(), runner: deps.runner(), id: deps.sessionId() });
         if (play?.token !== token) return false;
         if (r.trace || lang() === 'python') {
           deps.output({ kind: 'trace', result: r });

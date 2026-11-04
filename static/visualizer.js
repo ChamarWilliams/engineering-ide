@@ -499,6 +499,7 @@ print(f"Target found at index: {idx}")
         language: deps.language?.() || 'python',
         code,
         runner: 'server',
+        id: deps.sessionId?.() || undefined,
       });
 
       if (res.error) {

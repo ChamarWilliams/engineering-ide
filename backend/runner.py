@@ -241,7 +241,7 @@ def _step(run, phase, cmd, workdir, timeout, limited, sandbox=None, language=Non
 def run_code(run_id, language, code, sandbox=None, extras=()):
     result = {
         "steps": [], "exit_code": None, "timed_out": False, "stopped": False,
-        "truncated": False, "error": None, "time_limit": RUN_TIMEOUT, "duration_ms": 0, "rich": [],
+        "truncated": False, "error": None, "time_limit": RUN_TIMEOUT * (3 if language == "java" else 1), "duration_ms": 0, "rich": [],
     }
     tool = sandbox.tools.get(language) if sandbox else toolchain().get(language)
     if not tool:
@@ -267,7 +267,7 @@ def run_code(run_id, language, code, sandbox=None, extras=()):
             steps = []
             if compile_cmd:
                 steps.append(("compile", compile_cmd, COMPILE_TIMEOUT, False))
-            steps.append(("run", run_cmd, RUN_TIMEOUT, True))
+            steps.append(("run", run_cmd, RUN_TIMEOUT * (3 if language == "java" else 1), True))  # source launcher compiles inside the run
 
             for phase, cmd, timeout, limited in steps:
                 if run.stopped:

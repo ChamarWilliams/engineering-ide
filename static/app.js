@@ -310,6 +310,20 @@ function showShortcuts() {
   Modal.open({ title: 'Keyboard shortcuts', body, actions: [{ label: 'Done', primary: true }] });
 }
 
+function showNotice() {
+  const body = document.createElement('div');
+  body.className = 'sc-list';
+  const lines = [
+    'Do not put passwords, API keys, .env files, tokens or other confidential files into a hosted copy of Loopline.',
+    'Your files are stored on the server that hosts this app. Whoever runs that server can read them.',
+    'Each browser gets its own workspace, tied to a cookie. There are no accounts, so clearing cookies or switching browser starts an empty workspace.',
+    'Code you run executes on the host server. Run only code you trust.',
+    'Keep secrets in environment variables on your own machine, not in files you upload or paste here.',
+  ];
+  for (const line of lines) body.append(Object.assign(document.createElement('p'), { className: 'note', textContent: line }));
+  Modal.open({ title: 'Privacy and safety', body, actions: [{ label: 'Got it', primary: true }] });
+}
+
 function paletteFiles() {
   return state.sessions.map((s) => ({ label: s.title, detail: s.folder || '', run: () => openFromMap(s.id) }));
 }
@@ -320,6 +334,7 @@ function paletteCommands() {
   return [
     { label: 'New file…', keys: 'Alt+N', run: () => newFileDialog() },
     { label: 'New project…', run: () => Projects.open() },
+    { label: 'Privacy and safety notice', run: showNotice },
     { label: 'Upload files…', run: () => Projects.importFiles(state.folder || '') },
     { label: 'Upload folder…', run: () => Projects.importFolder() },
     { label: 'Upload zip…', run: () => Projects.importZip() },
@@ -953,6 +968,7 @@ function bindUi() {
   $('#welcomeImport').addEventListener('click', () => Projects.importFolder());
   $('#welcomeFiles').addEventListener('click', () => Projects.importFiles(''));
   $('#welcomeZip').addEventListener('click', () => Projects.importZip());
+  $('#welcomeNotice').addEventListener('click', showNotice);
   el.treeNewBtn.addEventListener('click', () => newFileDialog());
   $('#treeImportBtn').addEventListener('click', (e) => importMenuAt(e, state.folder || ''));
 

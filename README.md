@@ -120,6 +120,15 @@ python -m pytest
 
 The suite in `tests/` runs every file in `samples/loopline-test-project` through the real API (trace and plain run), plus files, folders, history, search, graph, multi-file C and the tracer helpers. It uses a throwaway database. A language whose tools are not installed (gcc, g++, gdb, a JDK, Lua, Go, rustc) is skipped, and `-ra` prints each skip reason. `python -m pytest tests/test_tracing.py -k go` runs one language. The sample files and the manual checklist are in `samples/loopline-test-project/TESTING.md`.
 
+## Privacy and safety
+
+Do not put passwords, API keys, `.env` files, tokens or other confidential files into a hosted copy of Loopline.
+
+- Your files are stored on the server that hosts the app, in its database. Whoever runs that server can read them.
+- On a shared deployment each browser gets its own private workspace, tied to a cookie. There are no accounts. Clearing cookies or switching browser means a new, empty workspace.
+- Code you run executes on the host server. Treat it as a demo, not a vault, and run only code you trust.
+- Keep secrets in environment variables on your own machine, never in files you upload or paste here.
+
 ## Limits
 
 - Without `--docker` the agent runs programs directly on your machine with a time limit only. There is no memory cap and the network is open.

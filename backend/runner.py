@@ -593,7 +593,9 @@ def _trace_other(run_id, language, code, sandbox, result, extras=()):
                 env["EIDE_SRC"] = ",".join([plan["source"], *(n for n in siblings if n.endswith((".c", ".cpp")))])
             step = _step(run, "trace", plan["run"], workdir, tracers.TRACE_TIMEOUT, True, None, plan["label"], env)
             result["phases"].append(_phase(step))
-            result.update(stderr=step["stderr"], exit_code=step["exit_code"], timed_out=step["timed_out"])
+            noise = "Error disabling address space randomization"
+            quiet = "\n".join(ln for ln in step["stderr"].splitlines() if noise not in ln)
+            result.update(stderr=quiet, exit_code=step["exit_code"], timed_out=step["timed_out"])
             result["trace"] = tracers.read_trace(workdir, plan["parse"])
             if result["trace"]:
                 result["trace"]["language"] = language

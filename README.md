@@ -135,6 +135,7 @@ Do not put passwords, API keys, `.env` files, tokens or other confidential files
 
 ## Limits
 
+- With `EIDE_MULTIUSER=1` each visitor gets 100 files, 50 folders and 10 MB including saved history, with the last 30 versions of each file kept. Change them with `EIDE_MAX_FILES`, `EIDE_MAX_FOLDERS`, `EIDE_MAX_MB` and `EIDE_KEEP_REVISIONS`. Single-user setups have no storage limit.
 - Without `--docker` the agent runs programs directly on your machine with a time limit only. There is no memory cap and the network is open.
 - Replit's sandbox has no outbound network, so cloud SDK code only reaches a cloud through your own agent.
 - Memory limits on the server runner use POSIX rlimits and are not enforced on Windows.

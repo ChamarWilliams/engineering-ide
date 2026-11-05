@@ -48,6 +48,18 @@ let saveTimer = null;
 let saving = null;
 let saveAgain = false;
 
+async function refreshUsage() {
+  const box = document.getElementById('treeUsage');
+  if (!box) return;
+  try {
+    const u = await api('GET', '/api/usage');
+    box.hidden = !u.limited;
+    const mb = (n) => (n / 1e6).toFixed(n < 1e7 ? 1 : 0);
+    box.textContent = `${mb(u.bytes)} of ${mb(u.max_bytes)} MB · ${u.files} of ${u.max_files} files`;
+    box.classList.toggle('near', u.bytes > u.max_bytes * 0.8 || u.files > u.max_files * 0.8);
+  } catch { box.hidden = true; }
+}
+
 let lastGuard = 0;
 
 function guardError(message) {
@@ -1274,6 +1286,8 @@ function init() {
   Pipeline.init();
   Device.init({ api, toast });
   Feedback.init({ api, toast, language: () => state.language });
+  refreshUsage();
+  setInterval(refreshUsage, 20000);
   addEventListener('error', (e) => guardError(e.message));
   addEventListener('unhandledrejection', (e) => guardError(e.reason?.message || e.reason));
   Qol.init({

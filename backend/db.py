@@ -57,7 +57,40 @@ SCHEMA = (
     """,
 )
 
-KEEP_REVISIONS = 200
+LIMITED = os.environ.get("EIDE_MULTIUSER", "") == "1"
+MAX_FILES = int(os.environ.get("EIDE_MAX_FILES", "100"))
+MAX_FOLDERS = int(os.environ.get("EIDE_MAX_FOLDERS", "50"))
+MAX_BYTES = int(float(os.environ.get("EIDE_MAX_MB", "10")) * 1_000_000)
+KEEP_REVISIONS = int(os.environ.get("EIDE_KEEP_REVISIONS", "30" if LIMITED else "200"))
+
+
+class QuotaError(Exception):
+    pass
+
+
+def usage():
+    files = _execute("SELECT COUNT(*) AS n, COALESCE(SUM(LENGTH(code)), 0) AS size FROM sessions WHERE owner = ?", (_me(),))[0]
+    history = _execute(
+        "SELECT COALESCE(SUM(LENGTH(r.code)), 0) AS size FROM revisions r JOIN sessions s ON s.id = r.session_id WHERE s.owner = ?",
+        (_me(),),
+    )[0]
+    folders = _execute("SELECT COUNT(*) AS n FROM owned_folders WHERE owner = ?", (_me(),))[0]
+    return {
+        "limited": LIMITED, "files": int(files["n"]), "max_files": MAX_FILES, "folders": int(folders["n"]), "max_folders": MAX_FOLDERS,
+        "bytes": int(files["size"]) + int(history["size"]), "max_bytes": MAX_BYTES,
+    }
+
+
+def _check_room(session_id, code):
+    if not LIMITED:
+        return
+    old = _execute("SELECT LENGTH(code) AS size FROM sessions WHERE id = ? AND owner = ?", (session_id, _me()))
+    used = usage()
+    if not old and used["files"] >= MAX_FILES:
+        raise QuotaError(f"You've reached the limit of {MAX_FILES} files. Delete some files to add more.")
+    grow = len(code) - (int(old[0]["size"]) if old else 0)
+    if grow > 0 and used["bytes"] + 2 * grow > MAX_BYTES:
+        raise QuotaError(f"Storage is full ({used['bytes'] / 1_000_000:.1f} of {MAX_BYTES / 1_000_000:.0f} MB). Delete files you don't need and try again.")
 
 
 def _connect():
@@ -145,6 +178,7 @@ def upsert_session(session_id, title, language, code, layout=None, folder=None):
     taken = _execute("SELECT owner FROM sessions WHERE id = ?", (session_id,))
     if taken and taken[0]["owner"] != _me():
         raise LookupError("No such file")
+    _check_room(session_id, code)
     row = _execute(
         "INSERT INTO sessions (id, title, language, code, layout, folder, owner) VALUES (?, ?, ?, ?, ?, COALESCE(CAST(? AS TEXT), ''), ?) "
         "ON CONFLICT (id) DO UPDATE SET title = excluded.title, language = excluded.language, "
@@ -230,6 +264,8 @@ def list_folders():
 
 
 def add_folder(path):
+    if LIMITED and not _execute("SELECT 1 AS x FROM owned_folders WHERE owner = ? AND path = ?", (_me(), path)) and usage()["folders"] >= MAX_FOLDERS:
+        raise QuotaError(f"You've reached the limit of {MAX_FOLDERS} folders. Delete some folders to add more.")
     _execute("INSERT INTO owned_folders (owner, path) VALUES (?, ?) ON CONFLICT (owner, path) DO NOTHING", (_me(), path))
 
 

@@ -236,3 +236,45 @@ def test_bad_input_gets_a_readable_message(client):
     res = client.post("/api/feedback", json={"message": "x"})
     assert res.status_code == 422 and isinstance(res.json()["detail"], str)
     assert client.post("/api/feedback", json={"kind": "nope", "message": "hello there"}).status_code == 422
+
+
+def test_storage_limits_apply_per_visitor(client, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend import db, main
+
+    monkeypatch.setattr(main, "MULTIUSER", True)
+    monkeypatch.setattr(db, "LIMITED", True)
+    monkeypatch.setattr(db, "MAX_FILES", 2)
+    monkeypatch.setattr(db, "MAX_FOLDERS", 1)
+    monkeypatch.setattr(db, "MAX_BYTES", 5000)
+    one, other = TestClient(main.app), TestClient(main.app)
+    first = one.post("/api/sessions", json={"title": "a", "language": "python", "code": "x = 1\n"})
+    assert first.status_code == 200
+    assert one.post("/api/sessions", json={"title": "b", "language": "python", "code": "y = 1\n"}).status_code == 200
+    full = one.post("/api/sessions", json={"title": "c", "language": "python", "code": "z = 1\n"})
+    assert full.status_code == 413 and "limit of 2 files" in full.json()["detail"]
+    edit = one.post("/api/sessions", json={"id": first.json()["id"], "title": "a", "language": "python", "code": "x = 2\n"})
+    assert edit.status_code == 200
+    assert other.post("/api/sessions", json={"title": "mine", "language": "python", "code": "q = 1\n"}).status_code == 200
+    assert one.post("/api/folders", json={"path": "one"}).status_code == 201
+    assert one.post("/api/folders", json={"path": "two"}).status_code == 413
+    big = other.post("/api/sessions", json={"title": "big", "language": "python", "code": "#" * 4000})
+    assert big.status_code == 413 and "Storage is full" in big.json()["detail"]
+    use = one.get("/api/usage").json()
+    assert use["files"] == 2 and use["max_files"] == 2 and use["limited"] is True
+
+
+def test_import_stops_cleanly_at_the_file_limit(client, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from backend import db, main
+
+    monkeypatch.setattr(main, "MULTIUSER", True)
+    monkeypatch.setattr(db, "LIMITED", True)
+    monkeypatch.setattr(db, "MAX_FILES", 3)
+    visitor = TestClient(main.app)
+    files = [{"path": f"f{i}.py", "content": "x = 1\n"} for i in range(6)]
+    res = visitor.post("/api/import", json={"folder": "bulk", "files": files})
+    assert res.status_code == 413 and "limit of 3 files" in res.json()["detail"]
+    assert len(visitor.get("/api/tree").json()["files"]) == 3

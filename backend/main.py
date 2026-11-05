@@ -116,6 +116,16 @@ async def not_found(_request: Request, exc: LookupError):
     return JSONResponse({"detail": str(exc) or "Not found"}, status_code=404)
 
 
+@app.exception_handler(db.QuotaError)
+async def over_quota(_request: Request, exc: db.QuotaError):
+    return JSONResponse({"detail": str(exc)}, status_code=413)
+
+
+@app.get("/api/usage")
+def storage_usage():
+    return db.usage()
+
+
 @app.exception_handler(RequestValidationError)
 async def bad_input(_request: Request, exc: RequestValidationError):
     first = exc.errors()[0] if exc.errors() else {}
@@ -354,6 +364,8 @@ def _store(folder, files):
             for i in range(len(pieces)):
                 db.add_folder("/".join(pieces[: i + 1]))
             row = db.upsert_session(_new_id(), title.replace("\x00", ""), language, clean, None, target)
+        except db.QuotaError:
+            raise
         except Exception:
             log.exception("import failed for %s", path)
             skipped += 1

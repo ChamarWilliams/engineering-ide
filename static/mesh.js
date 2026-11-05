@@ -791,6 +791,7 @@ print(table.concat(data, " "))
     }
     if (announce) {
       for (const id of cells.keys()) placeCell(id);
+      spread();
       drawWires(false);
       fit(true);
       touch();
@@ -1385,6 +1386,27 @@ print(table.concat(data, " "))
       }
       paintVar(row, value, animate);
     }
+    spread();
+  }
+
+  function spread() {
+    const columns = new Map();
+    for (const [id, cell] of cells) {
+      if (!pos[id] || !cell.el.offsetHeight) continue;
+      (columns.get(pos[id].x) ?? columns.set(pos[id].x, []).get(pos[id].x)).push(id);
+    }
+    let moved = false;
+    for (const ids of columns.values()) {
+      ids.sort((a, b) => pos[a].y - pos[b].y);
+      for (let i = 1; i < ids.length; i++) {
+        const above = ids[i - 1];
+        const need = pos[above].y + cells.get(above).el.offsetHeight + 56;
+        if (pos[ids[i]].y < need && !locked.has(ids[i])) { pos[ids[i]].y = need; moved = true; }
+      }
+    }
+    if (!moved) return;
+    for (const id of cells.keys()) placeCell(id);
+    drawWires(false);
   }
 
   function paintVar(row, value, animate) {

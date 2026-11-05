@@ -158,3 +158,11 @@ body.dropping-files::after { content: "Drop to import files, folders or a zip"; 
 @media (max-width: 640px) { .pipe-bar { flex-wrap: wrap; row-gap: 4px; padding: 4px 0; } .pipe-chips { order: 5; flex: 1 1 100%; overflow-x: auto; } .pipe-caption { flex-basis: 100%; order: 6; white-space: normal; } }
 .pipe { position: relative; }
 .pipe.pipe-open .pipe-list { position: absolute; left: 0; right: 0; bottom: 100%; z-index: 20; margin: 0; padding: 10px 12px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius) var(--radius) 0 0; box-shadow: 0 -6px 20px var(--shadow); max-height: 50vh; }
+
+.fb-body { display: grid; gap: 10px; min-width: min(420px, 80vw); }
+.fb-kinds { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.fb-kind, .fb-attach { display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; }
+.fb-text { resize: vertical; min-height: 96px; font-family: inherit; }
+.fb-names { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fb-status:empty { display: none; }
+@media (max-width: 640px) { .fb-names { grid-template-columns: 1fr; } }

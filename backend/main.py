@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response, WebSocket
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -115,8 +116,16 @@ async def not_found(_request: Request, exc: LookupError):
     return JSONResponse({"detail": str(exc) or "Not found"}, status_code=404)
 
 
+@app.exception_handler(RequestValidationError)
+async def bad_input(_request: Request, exc: RequestValidationError):
+    first = exc.errors()[0] if exc.errors() else {}
+    where = ".".join(str(p) for p in first.get("loc", ()) if p != "body")
+    return JSONResponse({"detail": f"That input wasn't accepted ({where or 'request'}: {first.get('msg', 'invalid')}). Nothing was changed."}, status_code=422)
+
+
 @app.exception_handler(Exception)
-async def server_error(_request: Request, exc: Exception):
+async def server_error(request: Request, exc: Exception):
+    log.error("unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
     detail = f"{type(exc).__name__}: {exc}" if os.environ.get("EIDE_DEBUG") == "1" else "Internal Server Error"
     return JSONResponse({"detail": detail}, status_code=500)
 
@@ -287,6 +296,43 @@ class ImportIn(BaseModel):
 
 class SyncIn(BaseModel):
     folder: str = Field(max_length=300)
+
+
+class FeedbackIn(BaseModel):
+    kind: Literal["bug", "idea", "other"] = "other"
+    message: str = Field(min_length=3, max_length=3000)
+    first_name: str = Field("", max_length=60)
+    last_name: str = Field("", max_length=60)
+    context: str = Field("", max_length=2000)
+
+
+FEEDBACK_PER_HOUR = 10
+_feedback_hits = defaultdict(deque)
+
+
+@app.post("/api/feedback", status_code=201)
+def send_feedback(body: FeedbackIn, request: Request):
+    who = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
+    now = time.monotonic()
+    hits = _feedback_hits[who]
+    while hits and now - hits[0] > 3600:
+        hits.popleft()
+    if len(hits) >= FEEDBACK_PER_HOUR:
+        raise HTTPException(429, "You've sent a lot of feedback this hour. Please try again later.")
+    hits.append(now)
+    name = " ".join(f"{body.first_name} {body.last_name}".split()) or "Anonymous"
+    db.add_feedback(_new_id(), body.kind, name, body.message.strip(), body.context.strip())
+    return {"ok": True}
+
+
+@app.get("/api/feedback")
+def read_feedback(key: str = ""):
+    admin = os.environ.get("EIDE_ADMIN_KEY", "")
+    if not admin:
+        raise HTTPException(404, "Not found")
+    if not hmac.compare_digest(key, admin):
+        raise HTTPException(403, "Wrong key")
+    return db.list_feedback()
 
 
 def _store(folder, files):

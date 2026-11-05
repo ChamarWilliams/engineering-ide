@@ -48,15 +48,31 @@ let saveTimer = null;
 let saving = null;
 let saveAgain = false;
 
+let lastGuard = 0;
+
+function guardError(message) {
+  const text = String(message || 'unknown error');
+  Feedback.remember(text);
+  if (/ResizeObserver|Script error/i.test(text) || Date.now() - lastGuard < 8000) return;
+  lastGuard = Date.now();
+  toast('Something went wrong. Your files are safe. The feedback button in the top bar sends me the details.');
+}
+
 async function api(method, url, body) {
-  const res = await fetch(url, {
-    method,
-    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...Runner.headers() },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...Runner.headers() },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error("Can't reach the server. Check your connection and try again");
+  }
   if (!res.ok) {
     let msg = res.statusText;
     try { const j = await res.json(); if (typeof j.detail === 'string') msg = j.detail; } catch { /* non-JSON */ }
+    if (res.status >= 500) Feedback.remember(`${method} ${url} -> ${res.status}`);
     throw new Error(msg || `HTTP ${res.status}`);
   }
   return res.status === 204 ? null : res.json();
@@ -336,6 +352,7 @@ function paletteCommands() {
     { label: 'New project…', run: () => Projects.open() },
     { label: 'Open on your phone or another device…', run: () => Device.open() },
     { label: 'Privacy and safety notice', run: showNotice },
+    { label: 'Send feedback or report a problem…', run: () => Feedback.open() },
     { label: 'Upload files…', run: () => Projects.importFiles(state.folder || '') },
     { label: 'Upload folder…', run: () => Projects.importFolder() },
     { label: 'Upload zip…', run: () => Projects.importZip() },
@@ -977,6 +994,8 @@ function bindUi() {
   $('#welcomeFiles').addEventListener('click', () => Projects.importFiles(''));
   $('#welcomeZip').addEventListener('click', () => Projects.importZip());
   $('#welcomeNotice').addEventListener('click', showNotice);
+  $('#welcomeFeedback').addEventListener('click', () => Feedback.open());
+  $('#feedbackBtn').addEventListener('click', () => Feedback.open());
   $('#welcomeDevice').addEventListener('click', () => Device.open());
   $('#treeDeviceBtn').addEventListener('click', () => Device.open());
   el.treeNewBtn.addEventListener('click', () => newFileDialog());
@@ -1254,6 +1273,9 @@ function init() {
   Terminals.init();
   Pipeline.init();
   Device.init({ api, toast });
+  Feedback.init({ api, toast, language: () => state.language });
+  addEventListener('error', (e) => guardError(e.message));
+  addEventListener('unhandledrejection', (e) => guardError(e.reason?.message || e.reason));
   Qol.init({
     tabs: () => tabs, state, switchTab, editor: () => editor, api, toast, extToLang: (ext) => EXT_LANG[ext],
     refresh: refreshTree, open: (id) => openFromMap(id, Prefs.get('openAs')), dropped: (transfer, folder) => Projects.dropped(transfer, folder),

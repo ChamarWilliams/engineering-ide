@@ -217,3 +217,22 @@ def test_workspace_link_opens_same_files_on_another_device(client, monkeypatch):
     assert stranger.get("/api/tree").json()["files"] == []
     stranger.get("/?ws=not-a-real-token")
     assert stranger.get("/api/tree").json()["files"] == []
+
+
+def test_feedback_is_saved_and_hidden_without_the_admin_key(client, monkeypatch):
+    res = client.post("/api/feedback", json={"kind": "idea", "message": "Dark mode for the console", "first_name": "Ada", "last_name": "Lovelace"})
+    assert res.status_code == 201
+    assert client.post("/api/feedback", json={"message": "no name given"}).status_code == 201
+    assert client.get("/api/feedback", params={"key": "x"}).status_code == 404
+    monkeypatch.setenv("EIDE_ADMIN_KEY", "secret")
+    assert client.get("/api/feedback", params={"key": "wrong"}).status_code == 403
+    rows = client.get("/api/feedback", params={"key": "secret"}).json()
+    names = {r["message"]: r["name"] for r in rows}
+    assert names["Dark mode for the console"] == "Ada Lovelace"
+    assert names["no name given"] == "Anonymous"
+
+
+def test_bad_input_gets_a_readable_message(client):
+    res = client.post("/api/feedback", json={"message": "x"})
+    assert res.status_code == 422 and isinstance(res.json()["detail"], str)
+    assert client.post("/api/feedback", json={"kind": "nope", "message": "hello there"}).status_code == 422

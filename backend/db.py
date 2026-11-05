@@ -45,6 +45,16 @@ SCHEMA = (
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS feedback (
+        id VARCHAR(16) PRIMARY KEY,
+        kind VARCHAR(12) NOT NULL,
+        name VARCHAR(130) NOT NULL,
+        message TEXT NOT NULL,
+        context TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """,
 )
 
 KEEP_REVISIONS = 200
@@ -205,6 +215,14 @@ def rename_agent(agent_id, name):
 
 def delete_agent(agent_id):
     _execute("DELETE FROM agents WHERE id = ?", (agent_id,))
+
+
+def add_feedback(feedback_id, kind, name, message, context):
+    _execute("INSERT INTO feedback (id, kind, name, message, context) VALUES (?, ?, ?, ?, ?)", (feedback_id, kind, name, message, context))
+
+
+def list_feedback(limit=200):
+    return _execute("SELECT id, kind, name, message, context, created_at FROM feedback ORDER BY created_at DESC LIMIT ?", (limit,))
 
 
 def list_folders():

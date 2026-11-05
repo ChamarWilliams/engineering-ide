@@ -120,6 +120,10 @@ python -m pytest
 
 The suite in `tests/` runs every file in `samples/loopline-test-project` through the real API (trace and plain run), plus files, folders, history, search, graph, multi-file C and the tracer helpers. It uses a throwaway database. A language whose tools are not installed (gcc, g++, gdb, a JDK, Lua, Go, rustc) is skipped, and `-ra` prints each skip reason. `python -m pytest tests/test_tracing.py -k go` runs one language. The sample files and the manual checklist are in `samples/loopline-test-project/TESTING.md`.
 
+## Feedback
+
+The chat icon in the top bar sends a bug report or idea, with an optional name. Set `EIDE_ADMIN_KEY` and open `/api/feedback?key=<that key>` to read what people sent. Without the key that address does not exist.
+
 ## Privacy and safety
 
 Do not put passwords, API keys, `.env` files, tokens or other confidential files into a hosted copy of Loopline.

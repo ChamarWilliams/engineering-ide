@@ -4,7 +4,46 @@
  * live pointer tracks, iteration inspectors, variable sparklines, and narrative explainers.
  */
 const Visualizer = (() => {
-  const $ = (id) => document.getElementById(id);
+  const SOFT = new Set(['vizActiveBlockMount']);
+  const $ = (id) => {
+    const el = document.getElementById(id);
+    if (el && SOFT.has(id) && !el.softened) soften(el);
+    return el;
+  };
+
+  function patchAttrs(old, next) {
+    for (const { name } of [...old.attributes]) if (!next.hasAttribute(name)) old.removeAttribute(name);
+    for (const { name, value } of [...next.attributes]) if (old.getAttribute(name) !== value) old.setAttribute(name, value);
+  }
+
+  function patchKids(old, next) {
+    const want = [...next.childNodes];
+    const have = [...old.childNodes];
+    want.forEach((node, i) => {
+      const cur = have[i];
+      if (!cur) { old.appendChild(node); return; }
+      if (cur.nodeType !== node.nodeType || cur.nodeName !== node.nodeName) { old.replaceChild(node, cur); return; }
+      if (node.nodeType !== 1) { if (cur.nodeValue !== node.nodeValue) cur.nodeValue = node.nodeValue; return; }
+      patchAttrs(cur, node);
+      patchKids(cur, node);
+    });
+    have.slice(want.length).forEach((cur) => cur.remove());
+  }
+
+  // Patches the existing DOM in place instead of rebuilding it.
+  function soften(el) {
+    const own = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    el.softened = true;
+    Object.defineProperty(el, 'innerHTML', {
+      configurable: true,
+      get() { return own.get.call(this); },
+      set(html) {
+        const box = document.createElement(this.localName);
+        own.set.call(box, html);
+        patchKids(this, box);
+      },
+    });
+  }
 
   // Pointer variable patterns
   const POINTER_RE = /^(i|j|k|l|r|lo|hi|low|high|mid|left|right|pivot|p|q|idx|index|start|end|cur|curr|gap|min_idx|max_idx|step|count|num|val)$/i;

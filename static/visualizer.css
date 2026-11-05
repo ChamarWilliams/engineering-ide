@@ -1521,3 +1521,5 @@
 .viz-mem-ptrs tr.bad .deref { color: #f87171; }
 @keyframes viz-mem-flash { from { background: color-mix(in srgb, #f5b942 45%, transparent); } to { background: var(--bg-panel); } }
 @media (prefers-reduced-motion: reduce) { .viz-mem-cell.flash, .viz-mem-node.fresh .viz-mem-node-box { animation: none; } }
+
+.viz-active-block-mount * { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, height 0.3s ease, width 0.3s ease, transform 0.3s ease; }
